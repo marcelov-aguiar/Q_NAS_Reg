@@ -1,0 +1,1 @@
+Esse arquivos são para testar apenas as operações convolucionais, ou seja, eles verificar se o resultado da convolução multi head implementada no PyTorch está igual ao resultado da convolução multi head implementados no TensorFlow pelo trabalho relacionado.

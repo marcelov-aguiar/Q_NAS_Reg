@@ -1,0 +1,106 @@
+# Configuration file 2
+# Esse arquivo é para testar a evolução após a correção algoritmo Multi Head
+# Tem apenas 20 geracoes
+
+QNAS:
+    crossover_rate: 0.5
+    max_generations: 20
+    max_num_nodes: 6
+    num_quantum_ind: 4
+    penalize_number: 3
+    repetition: 5
+    replace_method: best
+    update_quantum_gen: 5
+    update_quantum_rate: 0.1
+    save_data_freq: 10
+    crossover_frequency: 5
+    pop_crossover_rate: 0.25
+    pop_crossover_method: hux # hux, uniform
+    patience: 10
+    allow_duplicate_architectures: False
+
+    params_type:
+        decay: float
+        learning_rate: float
+        window_length: int
+
+    params_ranges:
+        decay: 0.9
+        learning_rate: 0.001
+        momentum: 0.0
+        weight_decay: 1.0e-4
+
+    function_dict:  {
+        'conv_1_1_4':  {'function': 'Conv1DBlock', 'params': {'kernel': 1, 'strides': 1, 'filters': 4}, 'prob': 1.0/2.0/14.0},
+        'conv_2_1_4':  {'function': 'Conv1DBlock', 'params': {'kernel': 2, 'strides': 1, 'filters': 4}, 'prob': 1.0/2.0/14.0},
+        'conv_1_1_3':  {'function': 'Conv1DBlock', 'params': {'kernel': 1, 'strides': 1, 'filters': 3}, 'prob': 1.0/2.0/14.0},
+        'conv_2_1_3':  {'function': 'Conv1DBlock', 'params': {'kernel': 2, 'strides': 1, 'filters': 3}, 'prob': 1.0/2.0/14.0},
+        'conv_1_1_6':  {'function': 'Conv1DBlock', 'params': {'kernel': 1, 'strides': 1, 'filters': 6}, 'prob': 1.0/2.0/14.0},
+        'conv_1_1_7':  {'function': 'Conv1DBlock', 'params': {'kernel': 1, 'strides': 1, 'filters': 7}, 'prob': 1.0/2.0/14.0},
+        'conv_1_1_16':  {'function': 'Conv1DBlock', 'params': {'kernel': 1, 'strides': 1, 'filters': 16}, 'prob': 1.0/2.0/14.0},
+        'conv_2_1_5':  {'function': 'Conv1DBlock', 'params': {'kernel': 2, 'strides': 1, 'filters': 5}, 'prob': 1.0/2.0/14.0},
+        'conv_2_1_8':  {'function': 'Conv1DBlock', 'params': {'kernel': 2, 'strides': 1, 'filters': 8}, 'prob': 1.0/2.0/14.0},
+        'conv_2_1_9': {'function': 'Conv1DBlock', 'params': {'kernel': 2, 'strides': 1, 'filters': 9}, 'prob': 1.0/2.0/14.0},
+        'conv_2_1_16': {'function': 'Conv1DBlock', 'params': {'kernel': 2, 'strides': 1, 'filters': 16}, 'prob': 1.0/2.0/14.0},
+        'conv_2_1_10':  {'function': 'Conv1DBlock', 'params': {'kernel': 2, 'strides': 1, 'filters': 10}, 'prob': 1.0/2.0/14.0},
+        'conv_1_1_5':  {'function': 'Conv1DBlock', 'params': {'kernel': 1, 'strides': 1, 'filters': 5}, 'prob': 1.0/2.0/14.0},
+        'conv_2_1_2':  {'function': 'Conv1DBlock', 'params': {'kernel': 2, 'strides': 1, 'filters': 2}, 'prob': 1.0/2.0},
+        'no_op':        {'function': 'NoOp', 'params': {}, 'prob': 1.0/2.0/14.0}
+    }
+
+train:
+    batch_size: 400
+    eval_batch_size: 400
+    max_epochs: 20
+    epochs_to_eval: 19
+    optimizer:
+        name: RMSprop #RMSprop, Adam, AdamW, SGD
+        params:
+            lr: 0.001
+            alpha: 0.9
+            eps: 0.0000001
+            momentum: 0.0
+            centered: True
+    fitness_metric: best_loss
+    criterion:
+        name: MSELoss #CrossEntropyLoss, MSELoss, L1Loss, RMSELoss
+        params:
+            reduction: mean
+    mo_metric_base: loss
+    mixed_precision: False
+    available_gpus: [0, 1] # gpu0, gpu1, gpu2 [0, 1, 2]
+    device: cuda:0
+
+    # Dataset
+    dataset: turbofan_FD001_v0
+    file_extension: npz
+    exp_path_base: exp_FD001
+    exp: exp_v0
+    log_level: INFO
+    repeat: 1
+    early_stopping: False
+    en_pop_crossover: False
+    dataloader_class: TurbofanDataLoader
+
+    data_augmentation: False
+    subtract_mean: True
+    limit_data: True
+    limit_data_value: 10000
+    num_workers: 4
+    num_classes: 1
+    task: regression
+    dataset_type: multihead
+
+    # Tensorflow
+    save_checkpoints_epochs: 5
+    save_summary_epochs: 0.25
+    threads: 4
+
+    # penalization parameters - scalarized fitness
+    max_params: 114090 # 1.9M
+    max_inference_time: 1000 # us
+
+    # Network structure Configuration
+    network_config: default
+    network_gap: False
+    num_lstm_cells: [220, 80]
