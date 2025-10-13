@@ -127,9 +127,10 @@ turbofan_FD002_2D_data/
 turbofan_FD003_2D_data/
 turbofan_FD004_2D_data/
 
-old_exp/
+.old_exp/
 ./
 *.npz
+.*
 # Results
 exp*/
 
