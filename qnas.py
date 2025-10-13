@@ -553,7 +553,7 @@ class QNAS(object):
                         f'- Net Population: {self.qpop_net.current_pop}\n'
                         f'- Parameter lower: {self.qpop_params.lower}\n'
                         f'- Parameter upper: {self.qpop_params.upper}\n'
-                        f'- Current population: {self.qpop_params.current_pop}\n')
+                        f'- Parameter population: {self.qpop_params.current_pop}\n')
 
     def save_data(self):
         """ Save QNAS data in a pickle file for logging and reloading purposes, including

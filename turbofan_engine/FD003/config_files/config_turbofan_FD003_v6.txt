@@ -7,10 +7,11 @@
 
 # Esse config e para executar com a correcao do calculo da metrica RMSE que estava por batch
 # Agora o calculo da metrica esta por amostra e não batch
+# Experimento semelhante ao v2 porem com 50 geracoes
 
 QNAS:
     crossover_rate: 0.5
-    max_generations: 20
+    max_generations: 50
     max_num_nodes: 6
     num_quantum_ind: 4
     penalize_number: 3
@@ -86,7 +87,7 @@ train:
     dataset: turbofan_fd003_multihead_train
     file_extension: csv
     exp_path_base: exp_FD003
-    exp: exp_v2
+    exp: exp_v6
     log_level: INFO
     repeat: 1
     early_stopping: False

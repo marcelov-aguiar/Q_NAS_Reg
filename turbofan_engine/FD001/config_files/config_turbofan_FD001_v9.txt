@@ -7,14 +7,15 @@
 
 # Esse config e para executar com a correcao do calculo da metrica RMSE que estava por batch
 # Agora o calculo da metrica esta por amostra e não batch
+# Esse experimento e semelhante ao v7, porem, com 50 geracoes
 
 QNAS:
     crossover_rate: 0.5
-    max_generations: 20
+    max_generations: 50
     max_num_nodes: 6
-    num_quantum_ind: 4
+    num_quantum_ind: 10
     penalize_number: 3
-    repetition: 5
+    repetition: 2
     replace_method: best
     update_quantum_gen: 5
     update_quantum_rate: 0.1
@@ -83,12 +84,12 @@ train:
     device: cuda:0
 
     # Dataset
-    dataset: turbofan_fd003_multihead_train
+    dataset: turbofan_fd001_multihead_train
     file_extension: csv
-    exp_path_base: exp_FD003
-    exp: exp_v2
+    exp_path_base: exp_FD001
+    exp: exp_v9
     log_level: INFO
-    repeat: 1
+    repeat: 1 # repetions for search
     early_stopping: False
     en_pop_crossover: False
     dataloader_class: TurbofanMultiHeadDataLoader
@@ -116,19 +117,19 @@ train:
     network_gap: False
 
     # Params for retrain:
-    batch_size_retrain: 64
-    eval_batch_size_retrain: 64
+    batch_size_retrain: 400
+    eval_batch_size_retrain: 32
     max_epochs_retrain: 30
     num_repetitions_retrain: 5 # repetions for retrain
 
     # problem-specific parameters
     extra_params:
-        dataset_test: turbofan_fd003_multihead_test
+        dataset_test: turbofan_fd001_multihead_test
         file_extension_test: csv
         cols_non_sensor: ['unit_nr', 'cycles', 'os_1', 'os_2', 'RUL']
-        sequence_length: 37
+        sequence_length: 30
         stride: 1
         in_channels: 1
         val_split: 0.1
         piecewise_lin_ref: 125
-        RUL_FD_test_file: RUL_FD003.txt
+        RUL_FD_test_file: RUL_FD001.txt
