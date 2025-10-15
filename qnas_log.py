@@ -133,7 +133,7 @@ class QNASLog:
         """
         search_params = False
         search_net = False
-        if len(params_pop) != 0 and len(net_pop != 0):
+        if len(params_pop) != 0 and len(net_pop) != 0:
             search_params = True
             search_net = True
             if len(params_pop) != len(net_pop):

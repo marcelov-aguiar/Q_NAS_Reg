@@ -4,10 +4,7 @@ Esse código teoricamente está com todas as correções do modelo Multi Head pa
 que ele encontre uma arquitetura igual ou melhor ao trabalho relacionado
 """
 
-import argparse
 import os
-import sys
-import auxiliar
 import qnas
 import qnas_config as cfg
 import evaluation
@@ -62,7 +59,7 @@ def main(**args):
 
 if __name__ == '__main__':
 
-    CONFIG_NAME = "config_turbofan_FD001_v5.txt"
+    CONFIG_NAME = "config_turbofan_FD001_v100.txt"
 
     base_path = os.path.dirname(os.path.abspath(__file__))
     config_path = os.path.join(base_path, 'config_files', CONFIG_NAME)

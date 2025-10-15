@@ -8,8 +8,6 @@ O run_evolution é semelhante ao run_evolution_turbofan_FD001_v0.py!!!!
 import argparse
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
-import sys
-import auxiliar
 import qnas
 import qnas_config as cfg
 import evaluation

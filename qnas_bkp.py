@@ -1,7 +1,9 @@
 """ Copyright (c) 2020, Daniela Szwarcman and IBM Research
     * Licensed under The MIT License [see LICENSE for details]
 
-    - Q-NAS algorithm class.
+    - Esse é o bkp do arquivo Q-NAS antes que eu altere um único
+individuo considerando parametros + rede arquitetura. O objetivo
+eh remover esse individuo da avaliação.
 """
 
 import datetime
@@ -70,11 +72,17 @@ class QNAS(object):
         self.qpop_params = None
         self.qpop_net = None
 
+        self.eval_history: Dict[str, EvalEntry] = {}
+        self.eval_history_params: Dict[str, EvalEntryParams] = {}
+        self.allow_duplicate_architectures = True
+        self.code_no_op = None
+
     def initialize_qnas(self, num_quantum_ind, params_ranges, params_type, repetition, max_generations,
                         crossover_rate, update_quantum_gen, replace_method, fn_list,
                         initial_probs, update_quantum_rate, max_num_nodes, reducing_fns_list,
                         patience,early_stopping, save_data_freq=0, penalize_number=0, crossover_frequency = 5,
-                        en_pop_crossover=False,pop_crossover_rate=0.25, pop_crossover_method='hux'):
+                        en_pop_crossover=False,pop_crossover_rate=0.25, pop_crossover_method='hux',
+                        allow_duplicate_architectures=True):
 
         """ Initialize algorithm with several parameter values.
 
@@ -125,7 +133,7 @@ class QNAS(object):
         self.en_pop_crossover = en_pop_crossover
         self.pop_crossover_rate = pop_crossover_rate
         self.crossover_frequency = crossover_frequency
-
+        self.allow_duplicate_architectures = allow_duplicate_architectures
         if reducing_fns_list:
             self.penalties = np.zeros(shape=(num_quantum_ind * repetition))
             self.reducing_fns_list = [i for i in range(len(fn_list))
@@ -148,6 +156,8 @@ class QNAS(object):
                                             fn_list=fn_list,
                                             initial_probs=initial_probs, 
                                             crossover_method=pop_crossover_method)
+                                            
+        self.code_no_op = self.get_id_fn_dict("no_op")
 
     def replace_pop(self, new_pop_params, new_pop_net, new_fitnesses, raw_fitnesses):
         """ Replace the individuals of old population using one of two methods: elitism or
@@ -316,6 +326,19 @@ class QNAS(object):
             fitnesses with penalization and without penalization; note that they are equal if
             no penalization is applied.
         """
+        pop_net_bkp = pop_net.copy()
+
+        pop_params_bkp = pop_params.copy()
+
+        if not self.allow_duplicate_architectures:
+            # Remove duplicate networks from the population
+            pop_net = self.__get_unique_pop(pop_net)
+
+            
+            if pop_params_bkp.size != 0:
+                # Remove duplicate params from the population
+                pop_params = self.__get_unique_pop_params(pop_params)
+
         decoded_params, decoded_nets = self.decode_pop(pop_params, pop_net)
 
         self.logger.info('Evaluating new population ...')
@@ -329,7 +352,169 @@ class QNAS(object):
         # Update the total evaluation counter
         self.total_eval = self.total_eval + np.size(pop_params, axis=0)
 
+        if not self.allow_duplicate_architectures:
+            self.__save_unique_fitnesses(pop_net, fitnesses, penalized_fitnesses)
+
+            if pop_params_bkp.size != 0:
+                self.__save_unique_fitnesses_params(pop_params, fitnesses, penalized_fitnesses)
+
+            penalized_fitnesses, fitnesses= self.__get_eval_history(pop_net_bkp)
+
+            if pop_params_bkp.size != 0:
+                penalized_fitnesses, fitnesses= self.__get_eval_history_params(pop_params_bkp)
+
         return penalized_fitnesses, fitnesses
+
+    def __save_unique_fitnesses(self,
+                                pop_net: np.array,
+                                fitnesses: np.array,
+                                penalized_fitnesses: np.array):
+        """ Save unique fitnesses of the population of networks.
+
+        Args:
+            pop_net: int numpy array with a classic population of networks.
+        """
+        for net, fitness, penalized_fitness in zip(pop_net, fitnesses, penalized_fitnesses):
+            hash = self.get_stable_hash(net)
+            if hash not in self.eval_history.keys() and np.all(net != -1):
+                hash = self.get_stable_hash(net)
+                self.eval_history[hash] = EvalEntry(fitness=fitness, penalty=penalized_fitness, net_pop=net)
+
+    def __save_unique_fitnesses_params(self,
+                                       pop_params: np.array,
+                                       fitnesses: np.array,
+                                       penalized_fitnesses: np.array):
+        """ Save unique fitnesses of the population of networks.
+
+        Args:
+            pop_net: int numpy array with a classic population of networks.
+        """
+        for param, fitness, penalized_fitness in zip(pop_params, fitnesses, penalized_fitnesses):
+            hash = self.get_stable_hash(param)
+            if hash not in self.eval_history_params.keys() and np.all(param != -1):
+                hash = self.get_stable_hash(param)
+                self.eval_history_params[hash] = EvalEntryParams(fitness=fitness, penalty=penalized_fitness, params_pop=param)
+
+    def __get_unique_pop(self, pop_net: np.array):
+        """ Get unique individuals from the population.
+
+        Args:
+            pop_net: int numpy array with a classic population of networks.
+
+        Returns:
+            unique population of networks.
+        """
+        unique_pop_net = []
+        MARKER = [-1] * len(pop_net[0])
+        for net in pop_net:
+            hash = self.get_stable_hash(net)
+            if hash not in self.eval_history.keys() and np.all(net != -1):
+                unique_pop_net.append(net)
+            else:
+                unique_pop_net.append(MARKER)
+
+        return np.array(unique_pop_net, dtype=np.int32)
+
+    def __get_unique_pop_params(self, pop_params: np.array):
+        """ Get unique individuals from the population.
+
+        Args:
+            pop_params: int numpy array with a classic population of networks.
+
+        Returns:
+            unique population of networks.
+        """
+        unique_pop_params = []
+        MARKER = [-1] * len(pop_params[0])
+        for net in pop_params:
+            hash = self.get_stable_hash(net)
+            if hash not in self.eval_history_params.keys() and np.all(net != -1):
+                unique_pop_params.append(net)
+            else:
+                unique_pop_params.append(MARKER)
+
+        return np.array(unique_pop_params)
+
+    def __get_eval_history(self, pop_net_bkp: np.array) -> Tuple[np.array, np.array]:
+        """ Get the evaluation history of the population of networks.
+
+        Returns:
+            fitnesses, penalized_fitnesses and population of networks.
+        """
+        fitnesses_temp = []
+        penalized_fitnesses_temp = []
+        for net in pop_net_bkp:
+            hash = self.get_stable_hash(net)
+            fitnesses_temp.append(self.eval_history[hash].fitness)
+            penalized_fitnesses_temp.append(self.eval_history[hash].penalty)
+
+        fitnesses = np.array(fitnesses_temp, dtype=np.float64)
+        penalized_fitnesses = np.array(penalized_fitnesses_temp, dtype=np.float64)
+
+        return penalized_fitnesses, fitnesses
+
+    def __get_eval_history_params(self, pop_params_bkp: np.array) -> Tuple[np.array, np.array]:
+        """ Get the evaluation history of the population of networks.
+
+        Returns:
+            fitnesses, penalized_fitnesses and population of networks.
+        """
+        fitnesses_temp = []
+        penalized_fitnesses_temp = []
+        for net in pop_params_bkp:
+            hash = self.get_stable_hash(net)
+            fitnesses_temp.append(self.eval_history_params[hash].fitness)
+            penalized_fitnesses_temp.append(self.eval_history_params[hash].penalty)
+
+        fitnesses = np.array(fitnesses_temp, dtype=np.float64)
+        penalized_fitnesses = np.array(penalized_fitnesses_temp, dtype=np.float64)
+
+        return penalized_fitnesses, fitnesses 
+
+    def get_id_fn_dict(self, function: str) -> float:
+        """ 
+        Searches for the ID of the function in the function list (`fn_list`).
+        
+        Notes
+        -----
+        The ID corresponds to the position of the function in the list.
+        
+        Parameters
+        ----------
+        function : str
+            The name of the function whose ID you want to find.
+        
+        Returns
+        -------
+        int or None
+            The ID (index) of the function in the list, or None if not found.
+        """
+        for i, fn in enumerate(self.qpop_net.chromosome.fn_list):
+            if fn == function:
+                return i
+        return None
+    
+    def get_stable_hash(self, net_pop: np.array) -> str:
+        """
+        Generates a stable SHA-256 hash from an architecture represented as a list of integers.
+
+        The function converts the list of integers (`net_pop`) into a comma-separated string,
+        then applies the SHA-256 hashing function to produce a unique and deterministic identifier.
+        This hash can be used to check whether a given architecture has already been evaluated.
+
+        Parameters
+        ----------
+        net_pop : List[int]
+            List of integers representing a neural architecture (e.g., operations per layer).
+
+        Returns
+        -------
+        str
+            A 64-character hexadecimal hash generated from the architecture representation.
+        """
+        filtered_net = [x for x in net_pop if x != self.code_no_op]
+        net_str = ','.join(map(str, filtered_net))
+        return hashlib.sha256(net_str.encode()).hexdigest()
 
     def get_penalties(self, pop_net, penalty_factor=0.01):
         """ Penalize individuals with more than *self.penalize_number* reducing layers. The

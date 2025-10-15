@@ -8,13 +8,11 @@ O run_retraining é semelhante ao run_retrain_turbofan_FD002_v0.py!!!!
 
 import argparse
 import os
-import auxiliar
 import qnas_config as cfg
 from util import check_files, init_log, save_results_file, load_yaml
 from cnn import input
 from cnn import train_detailed as train
 import time
-import sys
 
 DEBUG = True
 

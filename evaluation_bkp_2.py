@@ -1,7 +1,8 @@
 """ Copyright (c) 2023, Diego Páez
     * Licensed under The MIT License [see LICENSE for details]
 
-    - Distribute and Evaluate the population using multiple processes.
+    - Esse é o BKP do evaluation antes de retirar arquiteturas (rede + params)
+    repetidos
 """
 import os
 import torch.multiprocessing as mp
@@ -19,6 +20,7 @@ from qnas_log import QNASLog
 @dataclass
 class EvalEntry:
     fitness: float
+    penalty: float
     net_pop: np.array
     params_pop: np.array
 
@@ -82,8 +84,8 @@ class EvalPopulation(object):
         self.logger.info(f"Evaluation process initialized with {len(self.gpus)} GPUs")
 
         self.eval_history: Dict[str, EvalEntry] = {}
-        self.code_no_op = 'no_op'
-        self.allow_duplicates = self.train_params['allow_duplicate_architectures']  
+        self.allow_duplicate_architectures = True
+        self.code_no_op = 'no_op'   
         
     def __call__(self, decoded_params: list, decoded_nets: list, generation: int):
         """
@@ -121,26 +123,17 @@ class EvalPopulation(object):
                 if decoded_param['lstm_2'] > decoded_param['lstm_1']:
                     decoded_param['lstm_2'] = decoded_param['lstm_1']
 
-        unique_population, full_population = self._filter_unique_individuals(
-            decoded_params=decoded_params,
-            decoded_nets=decoded_nets)
-
         # Temporal solution to distribute the individuals in the threads
         selected_thread = 0
         individual_per_thread = []
         for idx in range(len(variables)):
-
-            is_duplicate = (unique_population[idx][0] == -1 
-                            and unique_population[idx][1] == -1
-            )
-
-            if (is_duplicate) and (not self.allow_duplicates):
-                continue # Remove duplicated individuals from the evaluation
-            else: 
+            if all(x is not None for x in decoded_nets[idx]): # Remove duplicated individuals from the evaluation
                 individual_per_thread.append((idx, selected_thread, decoded_nets[idx], decoded_params[idx], variables[idx]))
                 selected_thread += 1
                 if selected_thread >= self.train_params['threads']:
                     selected_thread = selected_thread % self.train_params['threads']
+            else:
+                pass
 
         if len(individual_per_thread) == 0:
             print("No valid individuals to evaluate.")
@@ -196,11 +189,7 @@ class EvalPopulation(object):
         time_elapsed_min = (evol_end-evol_time_start)/60
         time_elapsed_sec = (evol_end-evol_time_start)%60
 
-        if not self.train_params['allow_duplicate_architectures']:
-            evaluations = self._update_fitness_history(
-                full_population=full_population,
-                fitnesses=evaluations
-            )
+
 
         self.logger.info(f"Time elapsed for {pop_size} individuals: {time_elapsed_min:.0f}m {time_elapsed_sec:.0f}s")
         return evaluations
@@ -225,39 +214,34 @@ class EvalPopulation(object):
                             f"Best Metric: {round(return_val[0], 3)}, Params: {round(return_val[1], 2)}M, "
                             f"Inference Time: {round(return_val[2], 3)} uS")
     
-    def _filter_unique_individuals(self, decoded_params, decoded_nets):
-        full_population = QNASLog.get_individual_by_search_type(
-            np.array(decoded_params),
-            np.array(decoded_nets),
-            self.code_no_op)
-
-        unique_population = []
-        DUPLICATE_MARKER = [-1] * len(full_population[0])
-        for individual in full_population:
-            individual_hash = QNASLog.get_stable_hash(individual)
-            if individual_hash not in self.eval_history.keys() and np.all(individual != -1):
-                unique_population.append(individual)
+    def _get_unique_population(self, decoded_params, decoded_nets):
+        pop_net = QNASLog.get_individual_by_search_type(np.array(decoded_params),
+                                                        np.array(decoded_nets),
+                                                        self.code_no_op)
+        unique_pop_net = []
+        MARKER = [-1] * len(pop_net[0])
+        for net in pop_net:
+            hash = QNASLog.get_stable_hash(net)
+            if hash not in self.eval_history.keys() and np.all(net != -1):
+                unique_pop_net.append(net)
             else:
-                unique_population.append(DUPLICATE_MARKER)
+                unique_pop_net.append(MARKER)
 
-        return unique_population, full_population
+        return np.array(unique_pop_net, dtype=np.int32)
     
-    def _update_fitness_history(self,
-                                full_population: np.array,
+    def _save_unique_fitnesses(self,
+                                pop_net: np.array,
                                 fitnesses: np.array):
+        """ Save unique fitnesses of the population of networks.
+
+        Args:
+            pop_net: int numpy array with a classic population of networks.
         """
-        Save unique fitnesses and update duplicates from evaluation history.
-        """
-        for i, (individual, fitness) in enumerate(zip(full_population, fitnesses)):
-            net_pop = individual[0]
-            params_pop = individual[1]
-            individual_hash = QNASLog.get_stable_hash(individual)
-            if individual_hash not in self.eval_history.keys() and np.all(individual != -1):
-                self.eval_history[individual_hash] = EvalEntry(
-                    fitness=fitness,
-                    net_pop=net_pop,
-                    params_pop=params_pop)
-            else:
-                fitnesses[i] = self.eval_history[individual_hash].fitness
         
-        return fitnesses
+        for net, fitness in zip(pop_net, fitnesses):
+            net_pop = net[0]
+            params_pop = net[0]
+            hash = self.get_stable_hash(net)
+            if hash not in self.eval_history.keys() and np.all(net != -1):
+                hash = self.get_stable_hash(net)
+                self.eval_history[hash] = EvalEntry(fitness=fitness, net_pop=net_pop, params_pop=params_pop)
