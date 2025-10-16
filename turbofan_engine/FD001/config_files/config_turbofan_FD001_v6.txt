@@ -25,7 +25,6 @@ QNAS:
     pop_crossover_rate: 0.25
     pop_crossover_method: hux # hux, uniform
     patience: 10
-    allow_duplicate_architectures: True
 
     params_type:
         decay: float
@@ -83,6 +82,7 @@ train:
     mixed_precision: False
     available_gpus: [0, 1] # gpu0, gpu1, gpu2 [0, 1, 2]
     device: cuda:0
+    allow_duplicate_architectures: False
 
     # Dataset
     dataset: turbofan_fd001_multihead_train
@@ -90,7 +90,7 @@ train:
     exp_path_base: exp_FD001
     exp: exp_v6
     log_level: INFO
-    repeat: 1
+    repeat: 3 # repetions for search
     early_stopping: False
     en_pop_crossover: False
     dataloader_class: TurbofanMultiHeadDataLoader
@@ -107,7 +107,7 @@ train:
     # Tensorflow
     save_checkpoints_epochs: 5
     save_summary_epochs: 0.25
-    threads: 16
+    threads: 20
 
     # penalization parameters - scalarized fitness
     max_params: 114090 # 1.9M

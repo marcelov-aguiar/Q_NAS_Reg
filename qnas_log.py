@@ -6,8 +6,6 @@ from typing import List, Any, Dict, Tuple
 import numpy as np
 import copy
 import hashlib
-
-import auxiliar
 import default_names as names
 import util
 

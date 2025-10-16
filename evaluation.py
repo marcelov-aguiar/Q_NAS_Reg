@@ -5,7 +5,7 @@
 """
 import os
 import torch.multiprocessing as mp
-from typing import Dict, Any, List
+from typing import Dict
 import numpy as np
 from cnn import train
 from util import init_log, load_yaml
@@ -151,21 +151,7 @@ class EvalPopulation(object):
         self.logger.info(f"Starting the Generation {generation} with {pop_size} individuals")
         evol_time_start = time.perf_counter()
 
-        
         dataset_info = load_yaml(os.path.join(self.train_params['data_path'], 'data_info.txt'))
-        '''
-        # Disable sequential processing
-        gpu_device = self.gpus[0]
-        train_loader, val_loader = None, None# self.loader.get_loader(pin_memory_device=gpu_device)
-        self.run_individuals(generation,
-                             self.train_params,
-                             self.fn_dict,
-                             train_loader,
-                             val_loader,
-                             individual_per_thread,
-                             gpu_device,
-                             dataset_info)
-        '''
 
         for idx in range(self.train_params['threads']):
             individuals_selected_thread = list(filter(lambda x: x[1]==idx, individual_per_thread))

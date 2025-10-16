@@ -62,11 +62,19 @@ def main(**args):
 
 if __name__ == '__main__':
 
-	# How to run: python run_evolution.py --config FD002/config_files/config_turbofan_FD001_v100.txt
+	# How to run: python run_evolution.py --config FD002/config_files/config_turbofan_FD001_v100.txt --repeat 1
     import argparse
     os.environ["CUDA_VISIBLE_DEVICES"] = "1"
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, required=True, help="Config file name (inside config_files/)")
+
+    parser.add_argument(
+        "--repeat",
+        type=int,
+        default=1,
+        help="Number of repetitions (default: 1)"
+    )
+
     args = parser.parse_args()
 
     # ["FD002", "config_files", "config_turbofan_FD001_v100.txt"]
@@ -82,7 +90,7 @@ if __name__ == '__main__':
     exp = config_file['train']['exp']
     file_extension = config_file['train']['file_extension']
     dataset_path = os.path.join(base_path, 'data')
-    repeat = config_file['train']['repeat']
+    repeat = int(args.repeat)  # config_file['train']['repeat']
 
     exp_path = os.path.join(base_path, exp_path_base, f"{exp}_repeat_{repeat}")
 

@@ -17,7 +17,6 @@ QNAS:
     pop_crossover_rate: 0.25
     pop_crossover_method: hux # hux, uniform
     patience: 20
-    allow_duplicate_architectures: False
 
     params_type:
         decay: float
@@ -70,6 +69,7 @@ train:
     mixed_precision: False
     available_gpus: [0, 1] # gpu0, gpu1, gpu2 [0, 1, 2]
     device: cuda:0
+    allow_duplicate_architectures: False
 
     # Dataset
     dataset: turbofan_FD001_v0
