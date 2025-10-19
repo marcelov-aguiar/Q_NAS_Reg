@@ -4,18 +4,20 @@
 QNAS:
     crossover_rate: 0.5
     max_generations: 5
-    max_num_nodes: 6
-    num_quantum_ind: 4
+    max_num_nodes: 4
+    num_quantum_ind: 3
     penalize_number: 3
-    repetition: 1
+    repetition: 2
     replace_method: best
-    update_quantum_gen: 5
+    update_quantum_gen: 1
     update_quantum_rate: 0.1
     save_data_freq: 10
-    crossover_frequency: 5
+    crossover_frequency: 1
     pop_crossover_rate: 0.25
     pop_crossover_method: hux # hux, uniform
     patience: 10
+    early_stopping: False
+    en_pop_crossover: True
 
     params_type:
         decay: float
@@ -82,8 +84,6 @@ train:
     exp: exp_v100
     log_level: INFO
     repeat: 1 # repetions for search
-    early_stopping: False
-    en_pop_crossover: False
     dataloader_class: TurbofanMultiHeadDataLoader
 
     data_augmentation: False

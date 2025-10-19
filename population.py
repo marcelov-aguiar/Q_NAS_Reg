@@ -96,6 +96,7 @@ class QPopulationParams(QPopulation):
     def generate_classical(self):
         """ Generate a specific number of classical individuals from the observation of quantum
             individuals. This number is equal to (*num_ind* x *repetition*).
+            x = r * (u_{ij} - l_{ij} ) + l_{ij}
         """
 
         random_numbers = np.random.rand(self.num_ind * self.repetition,

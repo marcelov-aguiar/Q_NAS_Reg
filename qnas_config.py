@@ -160,8 +160,6 @@ class ConfigParameters(object):
         # Get the parameters lower and upper limits
         ranges = self._get_ranges(config_file)
         self.QNAS_spec['params_ranges'] = OrderedDict(sorted(ranges.items()))
-        self.QNAS_spec['early_stopping'] = self.args['early_stopping']
-        self.QNAS_spec['en_pop_crossover'] = self.args['en_pop_crossover']
 
         self._get_fn_spec()
 

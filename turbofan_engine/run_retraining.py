@@ -125,8 +125,6 @@ if __name__ == '__main__':
         "network_config": config_file['train']['network_config'],
         "optimizer": config_file['train']['optimizer'],
         "data_augmentation": config_file['train']['data_augmentation'],
-        "early_stopping": config_file['train']['early_stopping'],
-        "en_pop_crossover": config_file['train']['en_pop_crossover'],
         "save_checkpoints_epochs": config_file['train']['save_checkpoints_epochs'],
         "limit_data_value": config_file['train']['limit_data_value'],
         "network_gap": config_file['train']['network_gap'],
