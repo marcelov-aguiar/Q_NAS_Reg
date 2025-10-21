@@ -6,8 +6,14 @@ from typing import List, Any, Dict, Tuple
 import numpy as np
 import copy
 import hashlib
-import default_names as names
+import constants.default_names as names
 import util
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import hashlib
+import pandas as pd
+from datetime import datetime
+from constants import const_time
 
 
 class LogParamsEvolution:
@@ -43,6 +49,72 @@ class LogParamsEvolution:
         """
         return self.log_params_evolution[names.QNAS][names.FN_LIST]
 
+
+class QNASPalette:
+    """
+    Handles color palette generation for QNAS visualizations.
+
+    Uses a fixed base color palette (from QNAS original style). If the number of
+    functions exceeds the base palette size, additional colors are generated
+    automatically from a smooth colormap in the same visual style.
+    """
+
+    # 🎨 Paleta base (inspirada no estilo original)
+    _BASE_COLORS = [
+        '#4C72B0',  # azul
+        '#C44E52',  # vermelho
+        '#DD8452',  # laranja
+        '#E15759',  # coral
+        '#EDC948',  # amarelo
+        '#4E5F56',  # verde-acinzentado
+        '#55A868',  # verde
+        '#4BACC6',  # azul-claro
+        '#8172B2',  # roxo
+        '#3E2F5B',  # violeta escuro
+    ]
+
+    def __init__(self,
+                 log_params_evolution: LogParamsEvolution,
+                 colormap_fallback: str = "Spectral"):
+        """
+        Parameters
+        ----------
+        log_params_evolution : LogParamsEvolution
+            Object containing metadata and function list.
+        colormap_fallback : str
+            Matplotlib colormap name for generating extra colors beyond the base set.
+        """
+        self.fn_list = log_params_evolution.get_fn_list()
+        self.colormap_fallback = colormap_fallback
+        self.palette = self._build_palette()
+
+    def _generate_extra_colors(self, n_extra: int) -> list:
+        """Generate extra colors beyond the base palette using a smooth colormap."""
+        cmap = plt.get_cmap(self.colormap_fallback)
+        # gera tons distribuídos igualmente no colormap
+        extra_colors = [mcolors.to_hex(cmap(i / (n_extra - 1))) for i in range(n_extra)]
+        return extra_colors
+
+    def _build_palette(self) -> Dict[str, str]:
+        """Combine base colors with generated ones if necessary."""
+        n_funcs = len(self.fn_list)
+        n_base = len(self._BASE_COLORS)
+
+        if n_funcs <= n_base:
+            all_colors = self._BASE_COLORS[:n_funcs]
+        else:
+            n_extra = n_funcs - n_base
+            extra_colors = self._generate_extra_colors(n_extra)
+            all_colors = self._BASE_COLORS + extra_colors
+
+        palette = {fn: color for fn, color in zip(self.fn_list, all_colors)}
+        return palette
+
+    def get_palette(self) -> Dict[str, str]:
+        """Return the full color palette mapping."""
+        return self.palette
+
+
 class DataQNASPKL:
     """
     Handle the QNAS population data loaded from a pickle file.
@@ -72,10 +144,77 @@ class DataQNASPKL:
         -------
         Dict[int, Dict[str, Any]]
             Dictionary indexed by generation number, where each value contains:
-            - names.PARAMS_POP : population of parameters
-            - names.NET_POP : population of networks
+            - names.CANDIDATE_PARAMS_POP : population of parameters
+            - names.CANDIDATE_NET_POP : population of networks
         """
         return self.data_qnas
+
+    def get_generations(self) -> List[int]:
+        """Return a list of all generation indices."""
+        return list(self.data_qnas.keys())
+
+    def get_runtime(self) -> float:
+        """
+        Get the total runtime of the QNAS execution.
+
+        Returns
+        -------
+        float
+            Total runtime in seconds.
+        """
+        start_time = self.data_qnas[0][names.TIME]
+        last_key = list(self.data_qnas.keys())[-1]
+        end_time = self.data_qnas[last_key][names.TIME]
+
+        start_time = datetime.strptime(start_time, const_time.DATE_FORMAT)
+        end_time = datetime.strptime(end_time, const_time.DATE_FORMAT)
+
+        time_difference = end_time - start_time
+
+        hours = time_difference.total_seconds() / const_time.HOUR_TO_SECOND
+        return hours
+
+    def get_generation_fitness_metrics(self) -> Tuple[List[float], List[float], List[float], List[float]]:
+        """Return best per generation, best so far, average, and worst fitness values."""
+
+        gen_best_values = []
+        best_fitness_values = []
+        avg_fitness_values = []
+        worst_fitness_values = []
+
+        for generation, data in self.data_qnas.items():
+            fitness_values = [abs(f) for f in data[names.CANDIDATE_RAW_FITNESSES]]
+
+            gen_best_values.append(min(fitness_values))
+            best_fitness_values.append(abs(data[names.BEST_SO_FAR]))
+            avg_fitness_values.append(sum(fitness_values) / len(fitness_values))
+            worst_fitness_values.append(max(fitness_values))
+
+        return gen_best_values, best_fitness_values, avg_fitness_values, worst_fitness_values
+    
+    def get_top_fitness_metrics(self) -> Tuple[List[float], List[float], List[float], List[float]]:
+        """Compute fitness statistics based on the elite (best) individuals across all generations.
+
+        This function differs from `get_generation_fitness_metrics`, which analyzes 
+        all candidate fitnesses within each generation. Here, only the best individuals 
+        from each generation (stored in `names.FITNESSES`) are considered.
+        """
+
+        gen_best_values = []
+        best_fitness_values = []
+        avg_fitness_values = []
+        worst_fitness_values = []
+
+        for generation, data in self.data_qnas.items():
+            fitness_values = [abs(f) for f in data[names.FITNESSES]]
+
+            gen_best_values.append(min(fitness_values))
+            best_fitness_values.append(abs(data[names.BEST_SO_FAR]))
+            avg_fitness_values.append(sum(fitness_values) / len(fitness_values))
+            worst_fitness_values.append(max(fitness_values))
+
+        return gen_best_values, best_fitness_values, avg_fitness_values, worst_fitness_values
+
 
 class QNASLog:
     """
@@ -305,8 +444,8 @@ class QNASLog:
         repetition_dict = {}
 
         for gen_id, gen_data in self.data_qnas.get_data_qnas().items():
-            params_pop = gen_data[names.PARAMS_POP]
-            net_pop = gen_data[names.NET_POP]
+            params_pop = gen_data[names.CANDIDATE_PARAMS_POP]
+            net_pop = gen_data[names.CANDIDATE_NET_POP]
 
             gen_counts = QNASLog.count_unique_individuals(params_pop,
                                                           net_pop,
@@ -338,8 +477,8 @@ class QNASLog:
         gens_dict = {}
 
         for gen_id, gen_data in self.data_qnas.get_data_qnas().items():
-            params_pop = gen_data[names.PARAMS_POP]
-            net_pop = gen_data[names.NET_POP]
+            params_pop = gen_data[names.CANDIDATE_PARAMS_POP]
+            net_pop = gen_data[names.CANDIDATE_NET_POP]
 
             gen_counts = QNASLog.count_unique_individuals(params_pop,
                                                           net_pop,

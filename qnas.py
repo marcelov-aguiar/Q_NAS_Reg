@@ -10,12 +10,12 @@ from pickle import dump, HIGHEST_PROTOCOL
 
 import numpy as np
 import time
-import hashlib
 from population import QPopulationNetwork, QPopulationParams
 from util import delete_old_dirs, init_log, load_pkl, calculate_time
 from evaluation import EvalPopulation
 from dataclasses import dataclass
-from typing import Dict, Tuple
+import constants.default_names as names
+
 
 @dataclass
 class EvalEntry:
@@ -69,6 +69,12 @@ class QNAS(object):
 
         self.qpop_params = None
         self.qpop_net = None
+
+        self.candidate_net_pop = None
+        self.candidate_params_pop = None
+        self.candidate_fitnesses = None
+        self.candidate_raw_fitnesses = None
+
 
     def initialize_qnas(self, num_quantum_ind, params_ranges, params_type, repetition, max_generations,
                         crossover_rate, update_quantum_gen, replace_method, fn_list,
@@ -277,9 +283,16 @@ class QNAS(object):
                 best_current_pop = self.qpop_net.current_pop[:num_offspring]
                 new_pop_net[:num_offspring] = self.qpop_net.apply_crossover(best_current_pop, new_pop_net[:num_offspring])
         
-        self.logger.info("new population created =%s", new_pop_net)
+        self.logger.info("new population created for network architectures =%s", new_pop_net)
+        self.logger.info("new population created for hyperparameters =%s", new_pop_params)
         # Evaluate population
         new_fitnesses, raw_fitnesses = self.eval_pop(new_pop_params, new_pop_net)
+
+        # Store population to be saved in the log
+        self.candidate_net_pop = new_pop_net.copy()
+        self.candidate_params_pop = new_pop_params.copy()
+        self.candidate_fitnesses = new_fitnesses.copy()
+        self.candidate_raw_fitnesses = raw_fitnesses.copy()
 
         self.replace_pop(new_pop_params, new_pop_net, new_fitnesses, raw_fitnesses)
 
@@ -370,7 +383,11 @@ class QNAS(object):
                         f'- Net Population: {self.qpop_net.current_pop}\n'
                         f'- Parameter lower: {self.qpop_params.lower}\n'
                         f'- Parameter upper: {self.qpop_params.upper}\n'
-                        f'- Parameter population: {self.qpop_params.current_pop}\n')
+                        f'- Parameter population: {self.qpop_params.current_pop}\n'
+                        f'- Candidate Fitnesses: {self.candidate_fitnesses}\n'
+                        f'- Candidate Raw Fitnesses: {self.candidate_raw_fitnesses}\n'
+                        f'- Candidate Net Population:\n{self.candidate_net_pop}\n'
+                        f'- Candidate Parameter Population:\n{self.candidate_params_pop}\n')
 
     def save_data(self):
         """ Save QNAS data in a pickle file for logging and reloading purposes, including
@@ -395,7 +412,11 @@ class QNAS(object):
                                 'params_pop': self.qpop_params.current_pop,
                                 'net_probs': self.qpop_net.probabilities,
                                 'num_net_nodes': self.qpop_net.chromosome.num_genes,
-                                'net_pop': self.qpop_net.current_pop}
+                                'net_pop': self.qpop_net.current_pop,
+                                names.CANDIDATE_NET_POP: self.candidate_net_pop,
+                                names.CANDIDATE_PARAMS_POP: self.candidate_params_pop,
+                                names.CANDIDATE_FITNESSES: self.candidate_fitnesses,
+                                names.CANDIDATE_RAW_FITNESSES: self.candidate_raw_fitnesses}
 
         self.dump_pkl_data(data)
 
