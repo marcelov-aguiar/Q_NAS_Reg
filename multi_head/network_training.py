@@ -7,7 +7,6 @@ import sys, os
 import math
 import pandas as pd
 import numpy as np
-import auxiliar
 from sklearn.utils import shuffle
 from math import sqrt
 from sklearn.metrics import mean_squared_error

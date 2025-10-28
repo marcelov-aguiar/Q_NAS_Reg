@@ -87,14 +87,14 @@ train:
     exp_path_base: exp_FD003
     exp: exp_v1
     log_level: INFO
-    repeat: 1
+    repeat: 1 # repetions for search
     dataloader_class: TurbofanMultiHeadDataLoader
 
     data_augmentation: False
     subtract_mean: True
     limit_data: True
     limit_data_value: 10000
-    num_workers: 4
+    num_workers: 0
     num_classes: 1
     task: regression
     dataset_type: multihead
@@ -111,6 +111,12 @@ train:
     # Network structure Configuration
     network_config: default
     network_gap: False
+
+    # Params for retrain:
+    batch_size_retrain: 64
+    eval_batch_size_retrain: 64
+    max_epochs_retrain: 30
+    num_repetitions_retrain: 5 # repetions for retrain
 
     # problem-specific parameters
     extra_params:

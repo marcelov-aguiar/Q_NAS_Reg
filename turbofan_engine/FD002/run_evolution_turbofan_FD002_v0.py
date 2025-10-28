@@ -7,7 +7,6 @@ que ele encontre uma arquitetura igual ou melhor ao trabalho relacionado
 import argparse
 import os
 import sys
-import auxiliar
 import qnas
 import qnas_config as cfg
 import evaluation

@@ -3,7 +3,6 @@ Created on August 16, 2020
 @author: hmo (hyunho.mo@unitn.it)
 '''
 import logging
-import auxiliar
 import pandas as pd
 import numpy as np
 import sklearn as sk

@@ -7,7 +7,7 @@ O run_evolution é semelhante ao run_evolution_turbofan_FD001_v0.py!!!!
 
 import argparse
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import qnas
 import qnas_config as cfg
 import evaluation
@@ -64,7 +64,7 @@ if __name__ == '__main__':
 
 	# How to run: python run_evolution.py --config FD002/config_files/config_turbofan_FD001_v100.txt --repeat 1
     import argparse
-    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, required=True, help="Config file name (inside config_files/)")
 

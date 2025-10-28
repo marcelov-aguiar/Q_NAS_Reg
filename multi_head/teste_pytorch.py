@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import numpy as np
 import random
-import auxiliar
 from model_teste import MultiHeadNetworkGraphNew, Conv1DBlock  # Altere para o nome real do seu módulo
 # from cnn.model import MultiHeadNetworkGraph, Conv1DBlock  # Altere para o nome real do seu módulo
 

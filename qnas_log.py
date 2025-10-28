@@ -48,6 +48,12 @@ class LogParamsEvolution:
             List of function names registered in the QNAS log.
         """
         return self.log_params_evolution[names.QNAS][names.FN_LIST]
+    
+    def get_initial_probs(self) -> List[float]:
+        return self.log_params_evolution[names.QNAS][names.INITIAL_PROBS]
+    
+    def get_fn_dict(self) -> Dict[str, Any]:
+        return self.log_params_evolution[names.QNAS][names.FN_DICT]
 
 
 class QNASPalette:
@@ -215,6 +221,8 @@ class DataQNASPKL:
 
         return gen_best_values, best_fitness_values, avg_fitness_values, worst_fitness_values
 
+    def get_best_so_far_id(self):
+        return self.data_qnas[next(reversed(self.data_qnas))][names.BEST_SO_FAR_ID]
 
 class QNASLog:
     """
@@ -487,3 +495,12 @@ class QNASLog:
             gens_dict[gen_id] = gen_counts
 
         return gens_dict
+
+class TrainingParams:
+    def __init__(self,
+                 file_path: str):
+        self.file_path = file_path
+        self.training_params = util.load_yaml(file_path)
+    
+    def get_decoded_params(self) -> Dict[str, Any]:
+        return self.training_params[names.DECODED_PARAMS]

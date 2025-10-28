@@ -5,7 +5,6 @@ Created on August 17, 2020
 import logging
 import pandas as pd
 import numpy as np
-import auxiliar
 import sklearn as sk
 from sklearn import preprocessing
 

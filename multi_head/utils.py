@@ -15,7 +15,6 @@ import sys, os
 import pandas as pd
 import numpy as np
 from datetime import date
-import auxiliar
 from multi_head.ts_preprocessing import ts_prep
 from multi_head.ts_window import ts_win
 from multi_head.network_training import network_train

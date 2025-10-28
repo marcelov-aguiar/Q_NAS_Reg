@@ -100,7 +100,7 @@ train:
     subtract_mean: True
     limit_data: True
     limit_data_value: 10000
-    num_workers: 4
+    num_workers: 0
     num_classes: 1
     task: regression
     dataset_type: multihead
@@ -108,7 +108,7 @@ train:
     # Tensorflow
     save_checkpoints_epochs: 5
     save_summary_epochs: 0.25
-    threads: 4
+    threads: 20
 
     # penalization parameters - scalarized fitness
     max_params: 114090 # 1.9M

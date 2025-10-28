@@ -8,7 +8,6 @@ a parte multihead.
 """
 import torch
 import random
-import auxiliar
 from multi_head.utils import network_launcher
 import util
 import os

@@ -7,17 +7,16 @@
 
 # Esse config e para executar com a correcao do calculo da metrica RMSE que estava por batch
 # Agora o calculo da metrica esta por amostra e não batch
-# Coloquei batch igual a 64 para verificar se tem melhoria maior no resultado
 
-# Esse experimento e semelhante ao v4, porem, com 50 geracoes
+# Exp semelhante ao v5, porem, o tamanho do batch para treino e retreino foi alterado
 
 QNAS:
     crossover_rate: 0.5
-    max_generations: 50
+    max_generations: 20
     max_num_nodes: 6
-    num_quantum_ind: 10
+    num_quantum_ind: 4
     penalize_number: 3
-    repetition: 2
+    repetition: 5
     replace_method: best
     update_quantum_gen: 5
     update_quantum_rate: 0.1
@@ -64,7 +63,7 @@ QNAS:
     }
 
 train:
-    batch_size: 64
+    batch_size: 128
     eval_batch_size: 64
     max_epochs: 20
     epochs_to_eval: 19
@@ -88,12 +87,12 @@ train:
     allow_duplicate_architectures: False
 
     # Dataset
-    dataset: turbofan_fd002_multihead_train
+    dataset: turbofan_fd001_multihead_train
     file_extension: csv
-    exp_path_base: exp_FD002
-    exp: exp_v6
+    exp_path_base: exp_FD001
+    exp: exp_v14
     log_level: INFO
-    repeat: 3 # repetions for search
+    repeat: 4 # repetions for search
     dataloader_class: TurbofanMultiHeadDataLoader
 
     data_augmentation: False
@@ -119,19 +118,19 @@ train:
     network_gap: False
 
     # Params for retrain:
-    batch_size_retrain: 64
+    batch_size_retrain: 128
     eval_batch_size_retrain: 64
     max_epochs_retrain: 30
     num_repetitions_retrain: 5 # repetions for retrain
 
     # problem-specific parameters
     extra_params:
-        dataset_test: turbofan_fd002_multihead_test
+        dataset_test: turbofan_fd001_multihead_test
         file_extension_test: csv
         cols_non_sensor: ['unit_nr', 'cycles', 'os_1', 'os_2', 'RUL']
-        sequence_length: 20
+        sequence_length: 30
         stride: 1
         in_channels: 1
         val_split: 0.1
         piecewise_lin_ref: 125
-        RUL_FD_test_file: RUL_FD002.txt
+        RUL_FD_test_file: RUL_FD001.txt

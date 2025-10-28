@@ -6,7 +6,6 @@ Date: 17/09/2020
 """
 import pandas as pd
 from abc import abstractmethod
-import auxiliar
 from multi_head.utils import network_launcher
 # from .utils import network_input_generator, network_training
 
