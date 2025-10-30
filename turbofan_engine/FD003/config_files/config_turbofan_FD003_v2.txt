@@ -25,6 +25,7 @@ QNAS:
     patience: 10
     early_stopping: False
     en_pop_crossover: False
+    max_update: 0.05
 
     params_type:
         decay: float

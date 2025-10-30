@@ -149,7 +149,7 @@ class QPopulationNetwork(QPopulation):
     """ QNAS Chromosomes for the networks to be evolved. """
 
     def __init__(self, num_quantum_ind, max_num_nodes, repetition, update_quantum_rate,
-                fn_list, initial_probs,crossover_method='hux'):
+                fn_list, initial_probs,crossover_method='hux', max_update=0.05):
         """ Initialize QPopulationNetwork.
 
         Args:
@@ -168,7 +168,7 @@ class QPopulationNetwork(QPopulation):
                                                 update_quantum_rate)
         self.probabilities = None
 
-        self.max_update = 0.05
+        self.max_update = max_update
         self.max_prob = 0.99
 
         self.chromosome = QChromosomeNetwork(max_num_nodes, fn_list, self.dtype)

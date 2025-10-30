@@ -80,7 +80,8 @@ class QNAS(object):
                         crossover_rate, update_quantum_gen, replace_method, fn_list,
                         initial_probs, update_quantum_rate, max_num_nodes, reducing_fns_list,
                         patience,early_stopping, save_data_freq=0, penalize_number=0, crossover_frequency = 5,
-                        en_pop_crossover=False,pop_crossover_rate=0.25, pop_crossover_method='hux'):
+                        en_pop_crossover=False,pop_crossover_rate=0.25, pop_crossover_method='hux',
+                        max_update=0.05):
 
         """ Initialize algorithm with several parameter values.
 
@@ -153,7 +154,8 @@ class QNAS(object):
                                             update_quantum_rate=update_quantum_rate,
                                             fn_list=fn_list,
                                             initial_probs=initial_probs, 
-                                            crossover_method=pop_crossover_method)
+                                            crossover_method=pop_crossover_method,
+                                            max_update=max_update)
 
     def replace_pop(self, new_pop_params, new_pop_net, new_fitnesses, raw_fitnesses):
         """ Replace the individuals of old population using one of two methods: elitism or
