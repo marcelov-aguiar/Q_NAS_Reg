@@ -82,6 +82,14 @@ if __name__ == '__main__':
 
 	parser = argparse.ArgumentParser()
 	parser.add_argument("--config", type=str, required=True, help="Config file name (inside config_files/)")
+	
+	parser.add_argument(
+		"--repeat",
+		type=int,
+		default=1,
+		help="Number of repetitions (default: 1)"
+    )
+    
 	args = parser.parse_args()
 
 	# ["FD002", "config_files", "config_turbofan_FD001_v100.txt"]
@@ -96,11 +104,8 @@ if __name__ == '__main__':
 	exp_path_base = config_file['train']['exp_path_base']
 	exp = config_file['train']['exp']
 	file_extension = config_file['train']['file_extension']
-
-	dataset_path = os.path.join(base_path,
-	                         'data')
-
-	repeat = config_file['train']['repeat']
+	dataset_path = os.path.join(base_path, 'data')
+	repeat = int(args.repeat)  # config_file['train']['repeat']
 
 	exp_path = os.path.join(base_path,
 	                        exp_path_base,
