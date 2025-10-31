@@ -15,18 +15,14 @@ if __name__ == "__main__":
 	# config_dir = os.path.join(base_path, "config_files")
 	# config_files = [f for f in os.listdir(config_dir) if f.endswith(".txt")]
 	config_files = [
-		# "FD001/config_files/config_turbofan_FD001_v5.txt",
-		# "FD001/config_files/config_turbofan_FD001_v7.txt",
-		# "FD001/config_files/config_turbofan_FD001_v8.txt",
-		# "FD001/config_files/config_turbofan_FD001_v9.txt",
-		# "FD002/config_files/config_turbofan_FD002_v4.txt",
-		# "FD002/config_files/config_turbofan_FD002_v5.txt",
-		# "FD002/config_files/config_turbofan_FD002_v6.txt",
-		# "FD002/config_files/config_turbofan_FD002_v7.txt",
-		# "FD003/config_files/config_turbofan_FD003_v2.txt",
-		# "FD003/config_files/config_turbofan_FD003_v4.txt",
-		# "FD003/config_files/config_turbofan_FD003_v5.txt",
-		# "FD003/config_files/config_turbofan_FD003_v6.txt",
+		# "FD001/config_files/config_turbofan_FD001_v15.txt",
+		# "FD001/config_files/config_turbofan_FD001_v16.txt",
+		# "FD001/config_files/config_turbofan_FD001_v17.txt",
+		# "FD001/config_files/config_turbofan_FD001_v18.txt",
+		# "FD001/config_files/config_turbofan_FD001_v19.txt",
+		# "FD001/config_files/config_turbofan_FD001_v20.txt",
+		# "FD001/config_files/config_turbofan_FD001_v21.txt",
+		# DualGPU abaixo
 		"FD004/config_files/config_turbofan_FD004_v3.txt",
 		"FD004/config_files/config_turbofan_FD004_v4.txt",
 		"FD004/config_files/config_turbofan_FD004_v5.txt",

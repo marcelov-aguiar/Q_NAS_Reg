@@ -1,12 +1,9 @@
 dataset: turbofan_fd001_multihead_train
 num_classes: 1
 num_sensors: 14
-seed: 1761786619
+seed: 1761872813
 shape:
 - null
 - null
 - null
 task: regression
-test_records: 100
-train_records: 15867
-valid_records: 1764
