@@ -1468,151 +1468,6 @@ class NetworkGraph(nn.Module):
         return logits
 
 
-class MultiHeadNetworkGraphOld(nn.Module):
-    def __init__(self,
-                 num_classes,
-                 network_config,
-                 network_gap,
-                 num_lstm_cells_1,
-                 num_lstm_cells_2,
-                 in_channels=1,
-                 num_sensors=None):
-        """
-        Multi-Sensor CNN-LSTM Network: One CNN per sensor -> Concat -> LSTM -> FC.
-
-        Args:
-            num_classes (int): Number of output classes.
-            network_config (str): Network architecture type ('default', etc.).
-            network_gap (bool): Use GAP or not (ignored here).
-            in_channels (int): Number of channels per window (should be 1 for your case).
-            num_sensors (int): Number of sensors (e.g., 14).
-        """
-        super(MultiHeadNetworkGraphOld, self).__init__()
-        self.num_classes = num_classes
-        self.network_config = network_config
-        self.network_gap = network_gap
-        self.in_channels = in_channels
-        self.num_sensors = num_sensors
-        self.num_lstm_cells_1 = num_lstm_cells_1
-        self.num_lstm_cells_2 = num_lstm_cells_2
-
-        self.sensor_cnns = nn.ModuleList()
-        self.lstm1 = None
-        self.lstm2 = None
-        self.dropout = nn.Dropout(p=0.5)
-        self.fc = None
-
-    def create_functions(self, fn_dict, net_list, cbam=False):
-        """
-        Build a CNN (from QNAS) for each sensor.
-
-        Args:
-            fn_dict (dict): Block definitions from QNAS.
-            net_list (list): List of block names for the network.
-            cbam (bool): Optional CBAM block (not used here).
-        """
-        if self.num_sensors is None:
-            raise ValueError("num_sensors must be set!")
-
-        primary_blocks = {
-            'ConvBlock', 'Conv1DBlock', 'DWConvBlock', 'SEConvBlock', 'ResidualV1CBAM',
-            'MBConv', 'MBConvV2', 'MBConv_EPPGA', 'ResidualV1', 'ResidualV1Pr'
-        }
-
-        for _ in range(self.num_sensors):
-            layers = []
-            in_channels = self.in_channels
-            for name in net_list:
-                parameters = fn_dict[name]
-                func = parameters['function']
-                if func == 'NoOp':
-                    continue
-
-                params = parameters['params'].copy()
-
-                if func in primary_blocks:
-                    params['in_channels'] = in_channels
-                    in_channels = params['filters']
-                elif func == 'CBAMBlock':
-                    params['in_channels'] = in_channels
-
-                layer_class = functions_dict[func]
-                layers.append(layer_class(**params))
-
-            layers.append(nn.Flatten(start_dim=1))
-            self.sensor_cnns.append(nn.Sequential(*layers))
-
-    def forward(self, x):
-        """
-        Forward pass.
-
-        Args:
-            x (list of tensors): List with one tensor per sensor.
-                                 Each tensor: (batch_size, num_windows, window_size, 1)
-
-        Returns:
-            Tensor: Output shape (batch_size, num_classes)
-        """
-        sensor_outputs = []
-
-        for sensor_idx, sensor_input in enumerate(x):
-            # sensor_input: shape (batch_size, num_windows, window_size, 1)
-
-            batch_size, num_windows, window_size, channels = sensor_input.shape
-
-            # Reshape to (batch_size * num_windows, in_channels, window_size)
-            sensor_input_reshaped = sensor_input.view(batch_size * num_windows, channels, window_size)
-            sensor_input_reshaped = sensor_input_reshaped.permute(0, 1, 2)  # Keeping shape (batch*n_windows, in_channels, window_size)
-
-            # Pass through CNN of this sensor
-            cnn = self.sensor_cnns[sensor_idx]
-            sensor_out = cnn(sensor_input_reshaped)  # (batch_size * num_windows, total_features)
-
-            sensor_out = sensor_out.view(batch_size, num_windows, -1) # (batch_size, num_windows, total_features)
-
-            sensor_outputs.append(sensor_out)
-
-        # Concatenate all sensors along feature dimension
-        x_concat = torch.cat(sensor_outputs, dim=2)  # Shape: (batch_size, num_windows, total_features)
-
-        # Initialize LSTM on first pass
-        if self.lstm1 is None:
-            input_size_lstm = x_concat.shape[2]
-            self.lstm1 = nn.LSTM(
-                input_size=input_size_lstm,
-                hidden_size=self.num_lstm_cells_1,
-                num_layers=1,
-                batch_first=True,
-                bidirectional=False
-            )
-
-        if self.lstm2 is None:
-            self.lstm2 = nn.LSTM(
-                input_size=self.num_lstm_cells_1,
-                hidden_size=self.num_lstm_cells_2,
-                num_layers=1,
-                batch_first=True,
-                bidirectional=False
-            )
-
-        out1, _ = self.lstm1(x_concat)     # (batch, seq_len, 340)
-        out2, (hn, cn) = self.lstm2(out1)         # (batch, seq_len, 140)
-
-        # Take the last time step
-        last_timestep_out = hn[-1] # out2[:, -1, :]  # (batch, 140)
-
-        # Apply dropout before FC
-        last_timestep_out = self.dropout(last_timestep_out) 
-
-        # FC Layer
-        if self.fc is None:
-            self.fc = nn.Linear(last_timestep_out.shape[1], self.num_classes)
-
-        output = self.fc(last_timestep_out)  # (batch_size, num_classes)
-
-        return output
-
-
 class MultiHeadNetworkGraph(nn.Module):
     def __init__(self,
                  num_classes,
@@ -1743,4 +1598,155 @@ class MultiHeadNetworkGraph(nn.Module):
         # Aplica camada totalmente conectada à saída final da LSTM (último hidden state)
         output = self.fc(dropped)  # (batch, num_classes)
 
+        return output
+
+
+class MultiHeadNetworkGraphNew(nn.Module):
+    def __init__(self,
+                 num_classes,
+                 network_config,
+                 network_gap,
+                 num_lstm_cells_1,
+                 num_lstm_cells_2,
+                 in_channels=1,
+                 num_sensors=None,
+                 shared_head_architecture=True):
+        """
+        Multi-Sensor CNN-LSTM Network: One CNN per sensor -> Concat -> LSTM -> FC.
+
+        Args:
+            num_classes (int): Number of output classes.
+            network_config (str): Network architecture type ('default', etc.).
+            network_gap (bool): Use GAP or not (ignored here).
+            in_channels (int): Number of channels per window (should be 1 for your case).
+            num_sensors (int): Number of sensors (e.g., 14).
+            shared_head_architecture (bool): If True, all heads share the same CNN architecture.
+                                             If False, each head gets its own CNN architecture.
+        """
+        super(MultiHeadNetworkGraphNew, self).__init__()
+        self.num_classes = num_classes
+        self.network_config = network_config
+        self.network_gap = network_gap
+        self.in_channels = in_channels
+        self.num_sensors = num_sensors
+        self.num_lstm_cells_1 = num_lstm_cells_1
+        self.num_lstm_cells_2 = num_lstm_cells_2
+        self.shared_head_architecture = shared_head_architecture
+
+        self.sensor_cnns = nn.ModuleList()
+        self.lstm1 = None
+        self.lstm2 = None
+        self.dropout = nn.Dropout(p=0.5)
+        self.fc = None
+
+    def create_functions(self, fn_dict, net_list, cbam=False):
+        """
+        Build a CNN (from QNAS) for each sensor.
+
+        Args:
+            fn_dict (dict): Block definitions from QNAS.
+            net_list (list): List of block names for the network.
+                             If shared_head_architecture=False, it must contain
+                             len_per_head * num_sensors elements.
+            cbam (bool): Optional CBAM block (not used here).
+        """
+        if self.num_sensors is None:
+            raise ValueError("num_sensors must be set!")
+
+        primary_blocks = {
+            'ConvBlock', 'Conv1DBlock', 'DWConvBlock', 'SEConvBlock', 'ResidualV1CBAM',
+            'MBConv', 'MBConvV2', 'MBConv_EPPGA', 'ResidualV1', 'ResidualV1Pr'
+        }
+
+        # Se for arquitetura individual, divide o net_list entre os heads
+        if not self.shared_head_architecture:
+            total_blocks = len(net_list)
+            num_blocks_per_head = total_blocks // self.num_sensors
+            if total_blocks % self.num_sensors != 0:
+                raise ValueError(
+                    f"Net list length ({total_blocks}) is not divisible by number of sensors ({self.num_sensors})."
+                )
+
+        for head_idx in range(self.num_sensors):
+            layers = []
+            in_channels = self.in_channels
+
+            # Seleciona os blocos para este head
+            if self.shared_head_architecture:
+                current_blocks = net_list
+            else:
+                start = head_idx * num_blocks_per_head
+                end = (head_idx + 1) * num_blocks_per_head
+                current_blocks = net_list[start:end]
+
+            # Cria as camadas do head
+            for name in current_blocks:
+                parameters = fn_dict[name]
+                func = parameters['function']
+                if func == 'NoOp':
+                    continue
+
+                params = parameters['params'].copy()
+                if func in primary_blocks:
+                    params['in_channels'] = in_channels
+                    in_channels = params['filters']
+                elif func == 'CBAMBlock':
+                    params['in_channels'] = in_channels
+
+                layer_class = functions_dict[func]
+                layers.append(layer_class(**params))
+
+            self.sensor_cnns.append(nn.Sequential(*layers))
+
+    def forward(self, x):
+        """
+        Forward pass for the MultiHeadNetworkGraph model.
+
+        Args:
+            x (list[Tensor]): List of sensor inputs, each of shape 
+                              (batch_size, num_windows, window_size, channels=1)
+
+        Returns:
+            Tensor: Output tensor of shape (batch_size, num_classes)
+        """
+        features = []
+        for i, sensor_input in enumerate(x):
+            b, t, w, c = sensor_input.shape  # batch, windows, window_length, channels
+
+            # Reorganiza para (batch, time, channels, window_length)
+            sensor_input = sensor_input.permute(0, 1, 3, 2)  # (b, t, c=1, w)
+
+            # Junta batch e time steps: (b * t, c, w)
+            sensor_input_reshaped = sensor_input.reshape(b * t, c, w)
+
+            # Passa pela CNN correspondente ao sensor
+            conv_out = self.sensor_cnns[i][0](sensor_input_reshaped)
+
+            # Aplica Flatten manualmente: (b * t, num_filters * new_w)
+            conv_out = conv_out.view(b, t, -1)
+            features.append(conv_out)
+
+        # Concatena as features dos sensores
+        x_concat = torch.cat(features, dim=2)  # (batch, time, total_features)
+
+        # Inicializa LSTM se necessário
+        if self.lstm1 is None:
+            input_size = x_concat.shape[2]
+            self.lstm1 = nn.LSTM(input_size=input_size,
+                                 hidden_size=self.num_lstm_cells_1,
+                                 batch_first=True)
+            self.lstm2 = nn.LSTM(input_size=self.num_lstm_cells_1,
+                                 hidden_size=self.num_lstm_cells_2,
+                                 batch_first=True)
+
+        lstm_out1, _ = self.lstm1(x_concat)
+        lstm_out2, (hn, _) = self.lstm2(lstm_out1)
+        final_output = hn.squeeze(0)
+
+        dropped = self.dropout(final_output)
+
+        if self.fc is None:
+            self.fc = nn.Linear(self.num_lstm_cells_2, self.num_classes)
+
+        output = self.fc(dropped)
         return output

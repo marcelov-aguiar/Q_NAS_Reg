@@ -14,7 +14,7 @@
 
 QNAS:
     crossover_rate: 0.5
-    max_generations:40
+    max_generations: 40
     max_num_nodes: 6
     num_quantum_ind: 5
     penalize_number: 3
@@ -128,6 +128,8 @@ train:
 
     # problem-specific parameters
     extra_params:
+        shared_head_architecture: True
+        num_sensors: 14
         dataset_test: turbofan_fd001_multihead_test
         file_extension_test: csv
         cols_non_sensor: ['unit_nr', 'cycles', 'os_1', 'os_2', 'RUL']

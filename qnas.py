@@ -81,7 +81,7 @@ class QNAS(object):
                         initial_probs, update_quantum_rate, max_num_nodes, reducing_fns_list,
                         patience,early_stopping, save_data_freq=0, penalize_number=0, crossover_frequency = 5,
                         en_pop_crossover=False,pop_crossover_rate=0.25, pop_crossover_method='hux',
-                        max_update=0.05):
+                        max_update=0.05, shared_head_architecture=True, num_sensors=14):
 
         """ Initialize algorithm with several parameter values.
 
@@ -140,6 +140,9 @@ class QNAS(object):
 
         if save_data_freq:
             self.save_data_freq = save_data_freq
+
+        if not shared_head_architecture:
+            max_num_nodes = max_num_nodes * num_sensors # Multi Head with differents CNN
 
         self.qpop_params = QPopulationParams(num_quantum_ind=num_quantum_ind,
                                             params_ranges=params_ranges,

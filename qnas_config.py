@@ -160,6 +160,10 @@ class ConfigParameters(object):
         # Get the parameters lower and upper limits
         ranges = self._get_ranges(config_file)
         self.QNAS_spec['params_ranges'] = OrderedDict(sorted(ranges.items()))
+        self.QNAS_spec['shared_head_architecture'] = \
+            self.train_spec['extra_params']['shared_head_architecture']
+        self.QNAS_spec['num_sensors'] = \
+            self.train_spec['extra_params']['num_sensors']
 
         self._get_fn_spec()
 

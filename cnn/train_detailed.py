@@ -238,13 +238,14 @@ def reset_and_load_best_model(params, best_model_path):
     # Create the model
     if "dataset_type" in params and params["dataset_type"] == "multihead":
         # If multi-head architecture is enabled, create a multi-head network
-        best_model = model.MultiHeadNetworkGraph(num_classes=params['num_classes'], 
+        best_model = model.MultiHeadNetworkGraphNew(num_classes=params['num_classes'], 
                                                 network_config=params['network_config'], 
                                                 network_gap=params['network_gap'],
                                                 in_channels=1,
                                                 num_sensors=params['num_sensors'],
                                                 num_lstm_cells_1=int(params['decoded_params']['lstm_1']*20),
-                                                num_lstm_cells_2=int(params['decoded_params']['lstm_2']*20))
+                                                num_lstm_cells_2=int(params['decoded_params']['lstm_2']*20),
+                                                shared_head_architecture=params['extra_params']['shared_head_architecture'])
 
         single_sensor_shape = params['input_shape'][0]
 
@@ -541,16 +542,26 @@ def train_and_eval(params: Dict[str, Any],
 
     dataset_info['shape'] = list(train_loader.dataset.X[0].shape[1:])
 
+    num_sensors_data = dataset_info['num_sensors']
+    num_sensors_config = params['extra_params']['num_sensors']
+
+    if num_sensors_data != num_sensors_config:
+        raise ValueError(
+            f"Mismatch in number of sensors: dataset reports {num_sensors_data}, "
+            f"but config specifies {num_sensors_config}."
+        )
+
     # Create the model
     if "dataset_type" in params and params["dataset_type"] == "multihead":
         # If multi-head architecture is enabled, create a multi-head network
-        model_net = model.MultiHeadNetworkGraph(num_classes=dataset_info['num_classes'], 
+        model_net = model.MultiHeadNetworkGraphNew(num_classes=dataset_info['num_classes'], 
                                                 network_config=params['network_config'], 
                                                 network_gap=params['network_gap'],
                                                 in_channels=1,
-                                                num_sensors=dataset_info['num_sensors'],
+                                                num_sensors=num_sensors_data,
                                                 num_lstm_cells_1=int(best_individual_info['decoded_params']['lstm_1']*20),
-                                                num_lstm_cells_2=int(best_individual_info['decoded_params']['lstm_2']*20))
+                                                num_lstm_cells_2=int(best_individual_info['decoded_params']['lstm_2']*20),
+                                                shared_head_architecture=params['extra_params']['shared_head_architecture'])
 
         single_sensor_shape = [params['batch_size']] + dataset_info['shape']
         input_shape = [single_sensor_shape] * dataset_info["num_sensors"]
