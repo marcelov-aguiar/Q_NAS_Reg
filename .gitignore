@@ -133,6 +133,7 @@ turbofan_FD004_2D_data/
 .*
 # Results
 exp*/
+mlruns
 
 # old files
 x_files/*

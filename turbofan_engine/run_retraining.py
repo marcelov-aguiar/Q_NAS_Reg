@@ -77,7 +77,7 @@ def main(**args):
 
 if __name__ == '__main__':
 
-	# How to run: python run_retraining.py --config FD002/config_files/config_turbofan_FD001_v100.txt
+	# How to run: python run_retraining.py --config FD001/config_files/config_turbofan_FD001_v18.txt --repeat 3
 	import argparse
 
 	parser = argparse.ArgumentParser()
@@ -125,6 +125,7 @@ if __name__ == '__main__':
         "dataset": dataset,
         "config_file": config_path,
         "continue_path": '',
+        "extra_params": config_file['train']['extra_params'],
         "fitness_metric": config_file['train']['fitness_metric'],
         "log_level": config_file['train']['log_level'],
         "network_config": config_file['train']['network_config'],

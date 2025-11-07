@@ -15,7 +15,8 @@ class QNASVisualizer:
 		labels,
 		palette=None,
 		figsize=(14,6),
-		bar_width=0.8
+		bar_width=0.8,
+		show=True
 	):
 		"""
 		Plots stacked bar charts with small gaps, custom colors, and adjustable figure size.
@@ -71,7 +72,9 @@ class QNASVisualizer:
 		)
 
 		plt.tight_layout()
-		plt.show()
+		if show:
+			plt.show()
+		return fig
 
 	@staticmethod
 	def plot_hyperparameter_evolution_grid(
@@ -79,7 +82,8 @@ class QNASVisualizer:
 		geracoes: List[int],
 		individual_index: int,
 		param_names: List[str],
-		final_values: Optional[List[float]] = None
+		final_values: Optional[List[float]] = None,
+		show=True
 	):
 		"""
 		Plota uma grade de gráficos comparando a evolução da PDF de múltiplos
@@ -191,29 +195,52 @@ class QNASVisualizer:
 		fig.legend(handles=legend_handles, loc='upper left', bbox_to_anchor=(0.0, 1.0), frameon=True)
 
 		plt.tight_layout(rect=[0, 0, 1, 0.96])
-		plt.show()
+		if show:
+			plt.show()
+		return fig
 
 	@staticmethod
-	def plot_fitness_evolution(generations: List[int],
-							   gen_best: List[float],
-                           	   best_fitness: List[float],
-                           	   avg_fitness: List[float],
-                           	   worst_fitness: List[float],
-							   show_best_fitness: bool = True) -> None:
-		"""Plot fitness (loss) evolution over generations for the training data."""
+	def plot_fitness_evolution(
+		generations: List[int],
+		gen_best: List[float],
+		best_fitness: List[float],
+		avg_fitness: List[float],
+		worst_fitness: List[float],
+		show_best_fitness: bool = True,
+		show: bool = True,
+	):
+		"""
+		Plot fitness (loss) evolution over generations for the training data.
 
-		plt.figure(figsize=(10, 6))
-		plt.plot(generations, gen_best, color='lime', alpha=0.4, marker='o', linewidth=0.8, label='Best in Generation')
+		Args:
+		    generations (List[int]): List of generation indices.
+		    gen_best (List[float]): Best fitness values for each generation.
+		    best_fitness (List[float]): Best fitness values observed so far.
+		    avg_fitness (List[float]): Average fitness per generation.
+		    worst_fitness (List[float]): Worst fitness per generation.
+		    show_best_fitness (bool): Whether to plot the global best fitness curve.
+		    show (bool): Whether to display the figure interactively (default: True).
+
+		Returns:
+			matplotlib.figure.Figure: The generated matplotlib figure.
+		"""
+		fig, ax = plt.subplots(figsize=(10, 6))
+
+		ax.plot(generations, gen_best, color='lime', alpha=0.4, marker='o', linewidth=0.8, label='Best in Generation')
 		if show_best_fitness:
-			plt.plot(generations, best_fitness, color='green', alpha=0.4, marker='o', linewidth=0.8, label='Best Fitness')
-		plt.plot(generations, avg_fitness, color='blue', alpha=0.4, marker='o', linewidth=0.8, label='Average Fitness')
-		plt.plot(generations, worst_fitness, color='red', alpha=0.4, marker='o', linewidth=0.8, label='Worst Fitness')
+			ax.plot(generations, best_fitness, color='green', alpha=0.4, marker='o', linewidth=0.8, label='Best Fitness')
+		ax.plot(generations, avg_fitness, color='blue', alpha=0.4, marker='o', linewidth=0.8, label='Average Fitness')
+		ax.plot(generations, worst_fitness, color='red', alpha=0.4, marker='o', linewidth=0.8, label='Worst Fitness')
 
-		plt.xlabel('Generation')
-		plt.ylabel('Fitness (Loss)')
-		plt.title('QNAS Fitness Evolution')
-		plt.legend()
-		plt.grid(True)
-		plt.gca().xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
-		plt.tight_layout()
-		plt.show()
+		ax.set_xlabel('Generation')
+		ax.set_ylabel('Fitness (Loss)')
+		ax.set_title('QNAS Fitness Evolution')
+		ax.legend()
+		ax.grid(True)
+		ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+		fig.tight_layout()
+
+		if show:
+			plt.show()
+
+		return fig

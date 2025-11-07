@@ -16,4 +16,6 @@ pynvml
 ray
 gputil
 pathos
+jupyter
 protobuf>=3.20,<4
+mlflow==2.17.2

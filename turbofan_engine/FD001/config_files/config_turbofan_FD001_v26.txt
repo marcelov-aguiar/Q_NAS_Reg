@@ -7,19 +7,22 @@
 
 # Esse config e para executar com a correcao do calculo da metrica RMSE que estava por batch
 # Agora o calculo da metrica esta por amostra e não batch
-# Esse experimento e semelhante ao v5, porem, com mais individuos quanticos
-# Semelhante ao V7 porem com max_update igual a 0,15
+# Semelhante ao V5, porem o update_quantum_rate foi alterado para 0,5. Foi invertido a quantidade
+# de ind quanticos e repeticoes. 5 quantico e 4 repticoes
+# Semelhante ao V10, porem com 40 geracoes
+# Semelhante ao V15, porem com 100 geracoes e as demais configurações base da Daniela
+# Semelhante ao v25, mas com UQG 2, UQR 0,3 max_update 0,15
 
 QNAS:
     crossover_rate: 0.5
-    max_generations: 20
+    max_generations: 100
     max_num_nodes: 6
-    num_quantum_ind: 10
+    num_quantum_ind: 5
     penalize_number: 3
-    repetition: 2
+    repetition: 4
     replace_method: best
-    update_quantum_gen: 5
-    update_quantum_rate: 0.1
+    update_quantum_gen: 2
+    update_quantum_rate: 0.3
     save_data_freq: 10
     crossover_frequency: 5
     pop_crossover_rate: 0.25
@@ -91,9 +94,9 @@ train:
     dataset: turbofan_fd001_multihead_train
     file_extension: csv
     exp_path_base: exp_FD001
-    exp: exp_v17
+    exp: exp_v26
     log_level: INFO
-    repeat: 1 # repetions for search
+    repeat: 3 # repetions for search
     dataloader_class: TurbofanMultiHeadDataLoader
 
     data_augmentation: False
