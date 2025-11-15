@@ -14,13 +14,12 @@ if __name__ == "__main__":
 	# How to execute: LD_LIBRARY_PATH= python nome_do_arquivo.py
 	# config_dir = os.path.join(base_path, "config_files")
 	# config_files = [f for f in os.listdir(config_dir) if f.endswith(".txt")]
+	# TODO: Colocar para rodar na dualGPU, ainda está com a versão antiga
 	config_files = [		
-		"FD002/config_files/config_turbofan_FD002_v8.txt",
-		"FD002/config_files/config_turbofan_FD002_v9.txt",
-		"FD001/config_files/config_turbofan_FD001_v25.txt",
-		"FD002/config_files/config_turbofan_FD002_v10.txt",
-		"FD002/config_files/config_turbofan_FD002_v11.txt",
-		"FD001/config_files/config_turbofan_FD001_v28.txt"
+		# "FD004/config_files/config_turbofan_FD004_v9.txt",
+		"FD004/config_files/config_turbofan_FD004_v10.txt",
+		"FD004/config_files/config_turbofan_FD004_v11.txt",
+		"FD004/config_files/config_turbofan_FD004_v12.txt"
 	]
 	for cfg in config_files:
 		config_path = os.path.join(base_path, cfg)

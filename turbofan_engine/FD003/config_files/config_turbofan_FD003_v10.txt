@@ -8,12 +8,12 @@
 # Esse config e para executar com a correcao do calculo da metrica RMSE que estava por batch
 # Agora o calculo da metrica esta por amostra e não batch
 # Semelhante ao v2, mas com mais geracoes e as configuracoes base da daniela
-# Semelhante ao v7, mas com multi head
+# Semelhante ao v11, mas com multi head
 # Semelhante ao v8, mas com UQG 2, UQR 0,3 max_update 0,15
 
 QNAS:
     crossover_rate: 0.5
-    max_generations: 100
+    max_generations: 50
     max_num_nodes: 6
     num_quantum_ind: 5
     penalize_number: 3
@@ -94,7 +94,7 @@ train:
     exp_path_base: exp_FD003
     exp: exp_v10
     log_level: INFO
-    repeat: 3 # repetions for search
+    repeat: 1 # repetions for search
     dataloader_class: TurbofanMultiHeadDataLoader
 
     data_augmentation: False

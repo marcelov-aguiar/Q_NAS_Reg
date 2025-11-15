@@ -64,7 +64,6 @@ if __name__ == '__main__':
 
 	# How to run: python run_evolution.py --config FD002/config_files/config_turbofan_FD001_v100.txt --repeat 1
     import argparse
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, required=True, help="Config file name (inside config_files/)")
 

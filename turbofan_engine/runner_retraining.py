@@ -19,9 +19,12 @@ if __name__ == "__main__":
 		#"FD001/config_files/config_turbofan_FD001_v16.txt",
 		#"FD001/config_files/config_turbofan_FD001_v17.txt",
 		#"FD001/config_files/config_turbofan_FD001_v18.txt",
-		"FD001/config_files/config_turbofan_FD001_v22.txt",
-		"FD004/config_files/config_turbofan_FD004_v7.txt",
-		"FD004/config_files/config_turbofan_FD004_v8.txt"
+		"FD001/config_files/config_turbofan_FD001_v25.txt",
+		"FD002/config_files/config_turbofan_FD002_v8.txt",
+		"FD003/config_files/config_turbofan_FD003_v8.txt",
+		"FD003/config_files/config_turbofan_FD003_v9.txt",
+		"FD004/config_files/config_turbofan_FD004_v9.txt"
+		#"FD004/config_files/config_turbofan_FD004_v8.txt"
 		#"FD001/config_files/config_turbofan_FD001_v20.txt",
 		#"FD001/config_files/config_turbofan_FD001_v21.txt",
 		#"FD004/config_files/config_turbofan_FD004_v3.txt",

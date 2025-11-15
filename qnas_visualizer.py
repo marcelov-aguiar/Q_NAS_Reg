@@ -14,66 +14,66 @@ class QNASVisualizer:
 		individual_idx,
 		labels,
 		palette=None,
-		figsize=(14,6),
+		figsize=(15, 6),
 		bar_width=0.8,
 		show=True
 	):
 		"""
-		Plots stacked bar charts with small gaps, custom colors, and adjustable figure size.
+		Plots stacked bar charts for given generations side by side, with custom colors and adjustable figure size.
 
 		Args:
-		    data (dict): your data dict where data[gen]['net_probs'] is shape (5,20,11)
-		    generations (list of int): e.g. [0, last_gen]
-		    individual_idx (int): which individual to plot (0–4)
-		    labels (list of str]): length-11 list of operator names
-		    palette (dict): optional mapping label → hex color
-		    figsize (tuple): (width, height) in inches
-		    bar_width (float): width of each bar (0.5 → big gaps, 0.9 → small gaps)
+			data (dict): your data dict where data[gen]['net_probs'] has shape (num_individuals, num_nodes, num_functions)
+			generations (list of int): e.g. [0, last_gen]
+			individual_idx (int): which individual to plot (0–N)
+			labels (list of str): list of operator names (length = num_functions)
+			palette (dict): optional mapping label → hex color
+			figsize (tuple): (width, height) in inches
+			bar_width (float): width of each bar (0.5 → big gaps, 0.9 → small gaps)
+			show (bool): whether to display the plot
 		"""
 		n_gens = len(generations)
-		fig, axes = plt.subplots(n_gens, 1, figsize=figsize, sharex=True, sharey=True)
+		fig, axes = plt.subplots(1, n_gens, figsize=figsize, sharex=True, sharey=True)
+
 		if n_gens == 1:
 			axes = [axes]
 
-	    # Build a list of colors in the same order as `labels`
-		if palette:
-			colors = [palette[label] for label in labels]
-		else:
-			colors = None  # let pandas choose
+		# Build color list matching label order
+		colors = [palette[label] for label in labels] if palette else None
 
 		for ax, gen in zip(axes, generations):
-			probs = data[gen]['net_probs'][individual_idx]  # (20,11)
+			probs = data[gen]["net_probs"][individual_idx]  # shape: (num_nodes, num_functions)
 			df = pd.DataFrame(probs, columns=labels)
 
 			df.plot(
-				kind='bar',
+				kind="bar",
 				stacked=True,
 				ax=ax,
 				width=bar_width,
-				edgecolor='white',
+				edgecolor="white",
 				linewidth=0.5,
 				color=colors,
 				legend=False
 			)
 
-			ax.set_ylabel('Probability', fontsize=12)
-			ax.set_title(f'Individual {individual_idx} – Generation {gen}', fontsize=12, fontweight='bold')
+			ax.set_title(f"Individual {individual_idx} – Gen {gen}", fontsize=11, fontweight="bold")
 			ax.set_xticks(np.arange(probs.shape[0]))
 			ax.set_xticklabels(np.arange(probs.shape[0]), rotation=0)
+			ax.set_xlabel("Network nodes", fontsize=10)
+			ax.set_ylabel("Probability", fontsize=10)
+			ax.grid(False)
 
-		axes[-1].set_xlabel('Network nodes', fontsize=12)
-
-		# One legend on top plot
-		axes[0].legend(
+		# Add one legend to the right of the last subplot
+		axes[-1].legend(
 			labels,
 			bbox_to_anchor=(1.02, 1),
-			loc='upper left',
-			title='Functions'
+			loc="upper left",
+			title="Functions"
 		)
 
 		plt.tight_layout()
 		if show:
 			plt.show()
+
 		return fig
 
 	@staticmethod

@@ -7,10 +7,8 @@
 
 # Esse config e para executar com a correcao do calculo da metrica RMSE que estava por batch
 # Agora o calculo da metrica esta por amostra e não batch
-# Coloquei batch igual a 64 para verificar se tem melhoria maior no resultado
-
-# Esse experimento e semelhante ao v4, porem, com 50 geracoes
-# Semelhante ao V6, mas com mais geracoes e seguindo a configuracao base da Daniela
+# Semelhante ao v2, mas com mais geracoes e as configuracoes base da daniela
+# Semelhante ao V7, mas com 50 gerações
 
 QNAS:
     crossover_rate: 0.5
@@ -66,8 +64,8 @@ QNAS:
     }
 
 train:
-    batch_size: 64
-    eval_batch_size: 64
+    batch_size: 400
+    eval_batch_size: 400
     max_epochs: 20
     epochs_to_eval: 19
     optimizer:
@@ -90,10 +88,10 @@ train:
     allow_duplicate_architectures: False
 
     # Dataset
-    dataset: turbofan_fd002_multihead_train
+    dataset: turbofan_fd003_multihead_train
     file_extension: csv
-    exp_path_base: exp_FD002
-    exp: exp_v8
+    exp_path_base: exp_FD003
+    exp: exp_v11
     log_level: INFO
     repeat: 2 # repetions for search
     dataloader_class: TurbofanMultiHeadDataLoader
@@ -130,12 +128,12 @@ train:
     extra_params:
         shared_head_architecture: True
         num_sensors: 14
-        dataset_test: turbofan_fd002_multihead_test
+        dataset_test: turbofan_fd003_multihead_test
         file_extension_test: csv
         cols_non_sensor: ['unit_nr', 'cycles', 'os_1', 'os_2', 'RUL']
-        sequence_length: 20
+        sequence_length: 37
         stride: 1
         in_channels: 1
         val_split: 0.1
         piecewise_lin_ref: 125
-        RUL_FD_test_file: RUL_FD002.txt
+        RUL_FD_test_file: RUL_FD003.txt

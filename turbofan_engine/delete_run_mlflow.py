@@ -45,12 +45,12 @@ def delete_run_physical_and_mlflow(experiment_name: str, parent_run_id: str, mlr
     # 3️⃣ Apaga todos os nested runs (de baixo para cima)
     for run in reversed(all_nested):  # remove filhos antes dos pais
         run_id = run.info.run_id
-        print(f"🗑 Apagando nested run {run_id} via MLflow")
+        # print(f"🗑 Apagando nested run {run_id} via MLflow")
         client.delete_run(run_id)
         
         run_path = Path(mlruns_path) / experiment_id / run_id
         if run_path.exists():
-            print(f"🗑 Apagando pasta física {run_path}")
+            # print(f"🗑 Apagando pasta física {run_path}")
             shutil.rmtree(run_path)
 
     # 4️⃣ Apaga o run principal
@@ -67,7 +67,7 @@ def delete_run_physical_and_mlflow(experiment_name: str, parent_run_id: str, mlr
 
 # === Exemplo de uso ===
 if __name__ == "__main__":
-    experiment_name = "FD001"
-    parent_run_id = "2658ae3eaa7f4a34aae2239b5b631306"
+    experiment_name = "FD003"
+    parent_run_id = "07013e0d7cd14ef89d6901ed3720909e"
     mlruns_path = "./mlruns"
     delete_run_physical_and_mlflow(experiment_name, parent_run_id, mlruns_path)

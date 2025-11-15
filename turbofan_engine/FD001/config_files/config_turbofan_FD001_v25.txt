@@ -10,11 +10,11 @@
 # Semelhante ao V5, porem o update_quantum_rate foi alterado para 0,5. Foi invertido a quantidade
 # de ind quanticos e repeticoes. 5 quantico e 4 repticoes
 # Semelhante ao V10, porem com 40 geracoes
-# Semelhante ao V15, porem com 100 geracoes e as demais configurações base da Daniela
+# Semelhante ao V15, porem com 50 geracoes e as demais configurações base da Daniela
 
 QNAS:
     crossover_rate: 0.5
-    max_generations: 100
+    max_generations: 50
     max_num_nodes: 6
     num_quantum_ind: 5
     penalize_number: 3
@@ -95,7 +95,7 @@ train:
     exp_path_base: exp_FD001
     exp: exp_v25
     log_level: INFO
-    repeat: 3 # repetions for search
+    repeat: 1 # repetions for search
     dataloader_class: TurbofanMultiHeadDataLoader
 
     data_augmentation: False
@@ -110,7 +110,7 @@ train:
     # Tensorflow
     save_checkpoints_epochs: 5
     save_summary_epochs: 0.25
-    threads: 20
+    threads: 3
 
     # penalization parameters - scalarized fitness
     max_params: 114090 # 1.9M

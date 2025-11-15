@@ -5,7 +5,7 @@ Chama o run_evolution.py
 import subprocess
 import os
 from util import load_yaml
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 if __name__ == "__main__":
 	base_path = os.path.dirname(os.path.abspath(__file__))
@@ -14,11 +14,12 @@ if __name__ == "__main__":
 	# How to execute: LD_LIBRARY_PATH= python nome_do_arquivo.py
 	# config_dir = os.path.join(base_path, "config_files")
 	# config_files = [f for f in os.listdir(config_dir) if f.endswith(".txt")]
-	config_files = [
-		#"FD003/config_files/config_turbofan_FD003_v8.txt",
-		#"FD003/config_files/config_turbofan_FD003_v9.txt",
-		"FD003/config_files/config_turbofan_FD003_v10.txt",
-		"FD003/config_files/config_turbofan_FD003_v11.txt",
+	# TODO: Colocar para rodar na dualGPU, ainda está com a versão antiga
+	config_files = [		
+		# "FD002/config_files/config_turbofan_FD002_v8.txt",
+		"FD002/config_files/config_turbofan_FD002_v9.txt",
+		"FD002/config_files/config_turbofan_FD002_v10.txt",
+		"FD002/config_files/config_turbofan_FD002_v11.txt",
 	]
 	for cfg in config_files:
 		config_path = os.path.join(base_path, cfg)

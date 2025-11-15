@@ -8,6 +8,7 @@
 # Esse config e para executar com a correcao do calculo da metrica RMSE que estava por batch
 # Agora o calculo da metrica esta por amostra e não batch
 # Semelhante ao v2, mas com mais geracoes e as configuracoes base da daniela
+# 100 geracoes leva quase 4 dias de treinamento um unico experimento. optou por 50 geracoes
 
 QNAS:
     crossover_rate: 0.5
@@ -92,7 +93,7 @@ train:
     exp_path_base: exp_FD003
     exp: exp_v7
     log_level: INFO
-    repeat: 3 # repetions for search
+    repeat: 2 # repetions for search
     dataloader_class: TurbofanMultiHeadDataLoader
 
     data_augmentation: False
