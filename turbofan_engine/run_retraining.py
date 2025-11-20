@@ -117,7 +117,7 @@ if __name__ == '__main__':
         "max_epochs": config_file['train']['max_epochs_retrain'], #30,
         "batch_size": config_file['train']['batch_size_retrain'], #400,
         "eval_batch_size": config_file['train']['eval_batch_size_retrain'], #32,
-        "lr_scheduler": "LambdaLR",
+        "lr_scheduler": config_file['train']['lr_scheduler'], #LambdaLR",
         "num_workers": config_file['train']['num_workers'], #4,
         "limit_data": False,
         "experiment_path": exp_path,

@@ -17,8 +17,12 @@ if __name__ == "__main__":
 	config_files = [
 		#"FD003/config_files/config_turbofan_FD003_v8.txt",
 		#"FD003/config_files/config_turbofan_FD003_v9.txt",
-		"FD003/config_files/config_turbofan_FD003_v10.txt",
+		# "FD003/config_files/config_turbofan_FD003_v10.txt",
 		"FD003/config_files/config_turbofan_FD003_v11.txt",
+		"FD001/config_files/config_turbofan_FD001_v27.txt",
+		"FD004/config_files/config_turbofan_FD004_v12.txt"
+		#"FD002/config_files/config_turbofan_FD002_v11.txt"
+
 	]
 	for cfg in config_files:
 		config_path = os.path.join(base_path, cfg)

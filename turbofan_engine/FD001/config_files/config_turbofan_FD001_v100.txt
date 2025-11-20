@@ -117,7 +117,7 @@ train:
 
     # problem-specific parameters
     extra_params:
-        shared_head_architecture: False
+        shared_head_architecture: True
         num_sensors: 14
         dataset_test: turbofan_fd001_multihead_test
         file_extension_test: csv

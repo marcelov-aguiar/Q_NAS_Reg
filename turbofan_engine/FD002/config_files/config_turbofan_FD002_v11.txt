@@ -83,6 +83,7 @@ train:
             momentum: 0.0
             centered: True
     fitness_metric: best_loss
+    lr_scheduler: LambdaLR
     criterion:
         name: MSELoss #CrossEntropyLoss, MSELoss, L1Loss, RMSELoss
         params:
@@ -99,7 +100,7 @@ train:
     exp_path_base: exp_FD002
     exp: exp_v11
     log_level: INFO
-    repeat: 3 # repetions for search
+    repeat: 2 # repetions for search
     dataloader_class: TurbofanMultiHeadDataLoader
 
     data_augmentation: False
@@ -114,7 +115,7 @@ train:
     # Tensorflow
     save_checkpoints_epochs: 5
     save_summary_epochs: 0.25
-    threads: 20
+    threads: 6
 
     # penalization parameters - scalarized fitness
     max_params: 114090 # 1.9M

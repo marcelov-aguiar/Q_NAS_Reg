@@ -79,6 +79,7 @@ train:
             momentum: 0.0
             centered: True
     fitness_metric: best_loss
+    lr_scheduler: LambdaLR
     criterion:
         name: MSELoss #CrossEntropyLoss, MSELoss, L1Loss, RMSELoss
         params:

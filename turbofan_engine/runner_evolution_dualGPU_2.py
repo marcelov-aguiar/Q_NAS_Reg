@@ -19,7 +19,7 @@ if __name__ == "__main__":
 		# "FD002/config_files/config_turbofan_FD002_v8.txt",
 		"FD002/config_files/config_turbofan_FD002_v9.txt",
 		"FD002/config_files/config_turbofan_FD002_v10.txt",
-		"FD002/config_files/config_turbofan_FD002_v11.txt",
+		"FD002/config_files/config_turbofan_FD002_v11.txt", # Talvez vá para LIRA 132
 	]
 	for cfg in config_files:
 		config_path = os.path.join(base_path, cfg)

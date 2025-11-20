@@ -269,9 +269,9 @@ def log_experiment_run(data_set: str,
 # =============== DATA LOADING & PIPELINE ==================
 # ==========================================================
 
-def load_retrain_jsons(exp_repeat_path: Path) -> List[Dict[str, Any]]:
+def load_retrain_jsons(exp_repeat_path: Path, lr_scheduler: str) -> List[Dict[str, Any]]:
     """Loads retrain result file and prepares data for MLflow logging."""
-    results_file = exp_repeat_path / "retrain_results_F12_5_LambdaLR.txt"
+    results_file = exp_repeat_path / f"retrain_results_F12_5_{lr_scheduler}.txt"
     if not results_file.exists():
         raise FileNotFoundError(f"Missing file: {results_file}")
 
@@ -303,10 +303,21 @@ if __name__ == "__main__":
     config_dir = os.path.join(base_path, dataset, "config_files")
     config_files = [f for f in os.listdir(config_dir) if f.endswith(".txt")]
     config_files = [
-"config_turbofan_FD002_v8.txt",
-"config_turbofan_FD003_v8.txt",
-"config_turbofan_FD003_v9.txt",
-"config_turbofan_FD004_v9.txt"]
+        #"config_turbofan_FD001_v25.txt", # remover do MLFlow primeiro
+        #"config_turbofan_FD001_v26.txt",
+        #"config_turbofan_FD001_v27.txt",
+        #"config_turbofan_FD001_v28.txt",
+        #"config_turbofan_FD002_v8.txt", # remover do MLFlow primeiro
+        #"config_turbofan_FD002_v9.txt",
+        #"config_turbofan_FD002_v11.txt",
+        #"config_turbofan_FD003_v10.txt",
+        #"config_turbofan_FD003_v11.txt",
+        #"config_turbofan_FD004_v8.txt", # remover do MLFlow primeiro
+        #"config_turbofan_FD004_v9.txt", # remover do MLFlow primeiro
+        #"config_turbofan_FD004_v10.txt",
+        #"config_turbofan_FD004_v12.txt"
+        "config_turbofan_FD001_v29.txt"
+    ]
     for config_name in config_files:
         dataset = config_name.split("_")[2]
         try:
@@ -315,7 +326,7 @@ if __name__ == "__main__":
             config_data = load_yaml(config_path)
 
             exp_name = config_data['train']['exp']
-
+            lr_scheduler = config_data['train']['lr_scheduler']
             num_repeats = int(config_data["train"]["repeat"])
             print(f"🔁 Número de rodadas de buscas definido no config: {num_repeats}")
 
@@ -326,7 +337,7 @@ if __name__ == "__main__":
                     print(f"⚠️ Warning: repeat folder not found -> {repeat_dir}")
                     continue
                 
-                retrain_data = load_retrain_jsons(repeat_dir)
+                retrain_data = load_retrain_jsons(repeat_dir, lr_scheduler)
                 repeat_data[repeat_id] = retrain_data
                 print(f"✅ Busca {repeat_id} carregado com sucesso ({len(retrain_data)} retrains).")
 

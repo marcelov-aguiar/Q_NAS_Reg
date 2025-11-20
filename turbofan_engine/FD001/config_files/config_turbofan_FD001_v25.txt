@@ -79,6 +79,7 @@ train:
             momentum: 0.0
             centered: True
     fitness_metric: best_loss
+    lr_scheduler: LambdaLR
     criterion:
         name: MSELoss #CrossEntropyLoss, MSELoss, L1Loss, RMSELoss
         params:
@@ -95,7 +96,7 @@ train:
     exp_path_base: exp_FD001
     exp: exp_v25
     log_level: INFO
-    repeat: 1 # repetions for search
+    repeat: 3 # repetions for search
     dataloader_class: TurbofanMultiHeadDataLoader
 
     data_augmentation: False

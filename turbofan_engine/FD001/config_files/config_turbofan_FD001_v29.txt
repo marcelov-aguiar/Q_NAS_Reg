@@ -7,11 +7,12 @@
 
 # Esse config e para executar com a correcao do calculo da metrica RMSE que estava por batch
 # Agora o calculo da metrica esta por amostra e não batch
-# Esse experimento é semelhante ao exp 5 porem com 50 geracoes
+# igual ao v5 mas com lr_scheduler: TFScheduler
+
 
 QNAS:
     crossover_rate: 0.5
-    max_generations: 50
+    max_generations: 20
     max_num_nodes: 6
     num_quantum_ind: 4
     penalize_number: 3
@@ -76,7 +77,7 @@ train:
             momentum: 0.0
             centered: True
     fitness_metric: best_loss
-    lr_scheduler: LambdaLR
+    lr_scheduler: TFScheduler
     criterion:
         name: MSELoss #CrossEntropyLoss, MSELoss, L1Loss, RMSELoss
         params:
@@ -91,9 +92,9 @@ train:
     dataset: turbofan_fd001_multihead_train
     file_extension: csv
     exp_path_base: exp_FD001
-    exp: exp_v8
+    exp: exp_v29
     log_level: INFO
-    repeat: 4 # repetions for search
+    repeat: 3 # repetions for search
     dataloader_class: TurbofanMultiHeadDataLoader
 
     data_augmentation: False
@@ -121,7 +122,7 @@ train:
     # Params for retrain:
     batch_size_retrain: 400
     eval_batch_size_retrain: 32
-    max_epochs_retrain: 30
+    max_epochs_retrain: 20
     num_repetitions_retrain: 5 # repetions for retrain
 
     # problem-specific parameters

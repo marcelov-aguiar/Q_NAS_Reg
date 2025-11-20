@@ -20,6 +20,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau, ExponentialLR, CosineAnn
 from torch.optim.lr_scheduler import LambdaLR
 import torch.nn.init as init
 import random
+import math
 import pandas as pd
 
 current_directory = os.path.dirname(os.path.dirname(__file__))
@@ -123,6 +124,39 @@ def lr_schedule(epoch):
         return torch.exp(torch.tensor(-0.1)).item()
     else:
         return 1.0
+
+
+def keras_style_scheduler(epoch, lr):
+    if epoch == 10:
+        return lr * 0.1
+    elif epoch == 15:
+        return lr * 0.1
+    elif epoch == 20:
+        return lr * math.exp(-0.1)
+    else:
+        return lr
+
+# 2. Classe que conecta o PyTorch à sua função
+class TFScheduler:
+    def __init__(self, optimizer, schedule_fn):
+        self.optimizer = optimizer
+        self.schedule_fn = schedule_fn
+        self.last_epoch = 0 # Começa considerando que vai entrar na época 1
+
+    def step(self, metric=None):
+        # Itera sobre os grupos de parâmetros (caso tenha mais de um)
+        for param_group in self.optimizer.param_groups:
+            # Pega a LR atual que está no otimizador
+            current_lr = param_group['lr']
+            
+            # Chama sua função passando a época e a LR atual
+            new_lr = self.schedule_fn(self.last_epoch, current_lr)
+            
+            # Atualiza o otimizador com a nova LR
+            param_group['lr'] = new_lr
+        
+        # Incrementa a época interna para a próxima chamada
+        self.last_epoch += 1
 
 
 def init_weights2(m):
@@ -396,6 +430,8 @@ def train(model: torch.nn.Module,
         lr_scheduler = MultiStepLR(optimizer, milestones=milestones, gamma=0.1)
     elif params['lr_scheduler'] == 'LambdaLR':
         lr_scheduler = LambdaLR(optimizer, lr_lambda=lr_schedule)
+    elif params['lr_scheduler'] == 'TFScheduler':
+        lr_scheduler = TFScheduler(optimizer, keras_style_scheduler)
     else:
         lr_scheduler = None
 
