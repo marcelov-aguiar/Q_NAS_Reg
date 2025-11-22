@@ -78,7 +78,7 @@ def main(**args):
 
 if __name__ == '__main__':
 
-    CONFIG_NAME = "config_turbofan_FD001_v6.txt"
+    CONFIG_NAME = "config_turbofan_FD001_v100.txt"
 
     base_path = os.path.dirname(os.path.abspath(__file__))
     config_path = os.path.join(base_path, 'config_files', CONFIG_NAME)
@@ -104,7 +104,7 @@ if __name__ == '__main__':
         "max_epochs": config_file['train']['max_epochs_retrain'], #30,
         "batch_size": config_file['train']['batch_size_retrain'], #400,
         "eval_batch_size": config_file['train']['eval_batch_size_retrain'], #32,
-        "lr_scheduler": "LambdaLR",
+        "lr_scheduler": config_file['train']['lr_scheduler'],
         "num_workers": config_file['train']['num_workers'], #4,
         "limit_data": False,
         "experiment_path": exp_path,
@@ -112,6 +112,7 @@ if __name__ == '__main__':
         "dataset": dataset,
         "config_file": config_path,
         "continue_path": '',
+        "extra_params": config_file['train']['extra_params'],
         "fitness_metric": config_file['train']['fitness_metric'],
         "log_level": config_file['train']['log_level'],
         "network_config": config_file['train']['network_config'],

@@ -1,26 +1,39 @@
 # Configuration file
-# Arquivo apenas para teste e debug do código
-# Igual ao v28, mas com TFScheduler
+# Esse arquivo é para testar a evolucao apos a refatoracao do codigo do input e do config.txt
+# ele ja tem as probabilidades iguais e blocos de convolucao semelhante ao trabalho relacionado
+# teoricamente espero bons resultados
+# coloquei allow_duplicate_architectures como True pois ainda nao implementei deteccao de
+# net e parametros em conjunto que sao duplicados
+
+# Esse config e para executar com a correcao do calculo da metrica RMSE que estava por batch
+# Agora o calculo da metrica esta por amostra e não batch
+# Coloquei batch igual a 64 para verificar se tem melhoria maior no resultado
+
+# Esse experimento e semelhante ao v4, porem, com 50 geracoes
+# Semelhante ao V6, mas com mais geracoes e seguindo a configuracao base da Daniela
+# Semelhante ao V8, mas com multi Head
+# Igual ao v9, mas com TFScheduler
+# Igual ao v19, mas com TFScheduler no treino e 100 gerações
 
 
 QNAS:
     crossover_rate: 0.5
-    max_generations: 5
-    max_num_nodes: 4
-    num_quantum_ind: 3
+    max_generations: 100
+    max_num_nodes: 6
+    num_quantum_ind: 5
     penalize_number: 3
-    repetition: 2
+    repetition: 4
     replace_method: best
-    update_quantum_gen: 1
+    update_quantum_gen: 5
     update_quantum_rate: 0.1
     save_data_freq: 10
-    crossover_frequency: 1
+    crossover_frequency: 5
     pop_crossover_rate: 0.25
     pop_crossover_method: hux # hux, uniform
     patience: 10
     early_stopping: False
-    en_pop_crossover: True
-    max_update: 0.1
+    en_pop_crossover: False
+    max_update: 0.05
 
     params_type:
         decay: float
@@ -57,10 +70,10 @@ QNAS:
     }
 
 train:
-    batch_size: 400
-    eval_batch_size: 400
-    max_epochs: 2
-    epochs_to_eval: 1
+    batch_size: 64
+    eval_batch_size: 64
+    max_epochs: 20
+    epochs_to_eval: 19
     optimizer:
         name: RMSprop #RMSprop, Adam, AdamW, SGD
         params:
@@ -83,10 +96,10 @@ train:
     allow_duplicate_architectures: False
 
     # Dataset
-    dataset: turbofan_fd001_multihead_train
+    dataset: turbofan_fd002_multihead_train
     file_extension: csv
-    exp_path_base: exp_FD001
-    exp: exp_v100
+    exp_path_base: exp_FD002
+    exp: exp_v22
     log_level: INFO
     repeat: 1 # repetions for search
     dataloader_class: TurbofanMultiHeadDataLoader
@@ -103,7 +116,7 @@ train:
     # Tensorflow
     save_checkpoints_epochs: 5
     save_summary_epochs: 0.25
-    threads: 1
+    threads: 20
 
     # penalization parameters - scalarized fitness
     max_params: 114090 # 1.9M
@@ -114,21 +127,21 @@ train:
     network_gap: False
 
     # Params for retrain:
-    batch_size_retrain: 400
-    eval_batch_size_retrain: 32
+    batch_size_retrain: 64
+    eval_batch_size_retrain: 64
     max_epochs_retrain: 30
     num_repetitions_retrain: 5 # repetions for retrain
 
     # problem-specific parameters
     extra_params:
-        shared_head_architecture: True
+        shared_head_architecture: False
         num_sensors: 14
-        dataset_test: turbofan_fd001_multihead_test
+        dataset_test: turbofan_fd002_multihead_test
         file_extension_test: csv
         cols_non_sensor: ['unit_nr', 'cycles', 'os_1', 'os_2', 'RUL']
-        sequence_length: 30
+        sequence_length: 20
         stride: 1
         in_channels: 1
         val_split: 0.1
         piecewise_lin_ref: 125
-        RUL_FD_test_file: RUL_FD001.txt
+        RUL_FD_test_file: RUL_FD002.txt

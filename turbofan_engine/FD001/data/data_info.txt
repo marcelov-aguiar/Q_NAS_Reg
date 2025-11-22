@@ -1,7 +1,7 @@
 dataset: turbofan_fd001_multihead_train
 num_classes: 1
 num_sensors: 14
-seed: 1763782757
+seed: 1763819295
 shape:
 - null
 - null
