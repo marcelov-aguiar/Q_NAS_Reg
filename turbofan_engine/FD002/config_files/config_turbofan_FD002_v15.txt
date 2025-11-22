@@ -1,0 +1,143 @@
+# Configuration file
+# Esse arquivo é para testar a evolucao apos a refatoracao do codigo do input e do config.txt
+# ele ja tem as probabilidades iguais e blocos de convolucao semelhante ao trabalho relacionado
+# teoricamente espero bons resultados
+# coloquei allow_duplicate_architectures como True pois ainda nao implementei deteccao de
+# net e parametros em conjunto que sao duplicados
+
+# Esse config e para executar com a correcao do calculo da metrica RMSE que estava por batch
+# Agora o calculo da metrica esta por amostra e não batch
+# Coloquei batch igual a 64 para verificar se tem melhoria maior no resultado
+# Experimento semelhante ao v3 porem com 50 geracoes
+# Igual ao v5, mas com TFScheduler
+
+
+QNAS:
+    crossover_rate: 0.5
+    max_generations: 50
+    max_num_nodes: 6
+    num_quantum_ind: 4
+    penalize_number: 3
+    repetition: 5
+    replace_method: best
+    update_quantum_gen: 5
+    update_quantum_rate: 0.1
+    save_data_freq: 10
+    crossover_frequency: 5
+    pop_crossover_rate: 0.25
+    pop_crossover_method: hux # hux, uniform
+    patience: 10
+    early_stopping: False
+    en_pop_crossover: False
+    max_update: 0.05
+
+    params_type:
+        decay: float
+        learning_rate: float
+        weight_decay: int
+        lstm_1: int
+        lstm_2: int
+
+
+    params_ranges:
+        decay: 0.9
+        learning_rate: 0.001
+        weight_decay: 1.0e-4
+        lstm_1: [4, 20]
+        lstm_2: [4, 15]
+
+    function_dict:  {
+        'conv_1_1_4':  {'function': 'Conv1DBlock', 'params': {'kernel': 1, 'strides': 1, 'filters': 4}, 'prob': 1.0/16.0},
+        'conv_2_1_4':  {'function': 'Conv1DBlock', 'params': {'kernel': 2, 'strides': 1, 'filters': 4}, 'prob': 1.0/16.0},
+        'conv_1_1_3':  {'function': 'Conv1DBlock', 'params': {'kernel': 1, 'strides': 1, 'filters': 3}, 'prob': 1.0/16.0},
+        'conv_2_1_3':  {'function': 'Conv1DBlock', 'params': {'kernel': 2, 'strides': 1, 'filters': 3}, 'prob': 1.0/16.0},
+        'conv_1_1_9':  {'function': 'Conv1DBlock', 'params': {'kernel': 1, 'strides': 1, 'filters': 9}, 'prob': 1.0/16.0},
+        'conv_1_1_6':  {'function': 'Conv1DBlock', 'params': {'kernel': 1, 'strides': 1, 'filters': 6}, 'prob': 1.0/16.0},
+        'conv_1_1_7':  {'function': 'Conv1DBlock', 'params': {'kernel': 1, 'strides': 1, 'filters': 7}, 'prob': 1.0/16.0},
+        'conv_1_1_16':  {'function': 'Conv1DBlock', 'params': {'kernel': 1, 'strides': 1, 'filters': 16}, 'prob': 1.0/16.0},
+        'conv_2_1_5':  {'function': 'Conv1DBlock', 'params': {'kernel': 2, 'strides': 1, 'filters': 5}, 'prob': 1.0/16.0},
+        'conv_2_1_8':  {'function': 'Conv1DBlock', 'params': {'kernel': 2, 'strides': 1, 'filters': 8}, 'prob': 1.0/16.0},
+        'conv_2_1_9': {'function': 'Conv1DBlock', 'params': {'kernel': 2, 'strides': 1, 'filters': 9}, 'prob': 1.0/16.0},
+        'conv_2_1_16': {'function': 'Conv1DBlock', 'params': {'kernel': 2, 'strides': 1, 'filters': 16}, 'prob': 1.0/16.0},
+        'conv_2_1_10':  {'function': 'Conv1DBlock', 'params': {'kernel': 2, 'strides': 1, 'filters': 10}, 'prob': 1.0/16.0},
+        'conv_1_1_5':  {'function': 'Conv1DBlock', 'params': {'kernel': 1, 'strides': 1, 'filters': 5}, 'prob': 1.0/16.0},
+        'conv_2_1_2':  {'function': 'Conv1DBlock', 'params': {'kernel': 2, 'strides': 1, 'filters': 2}, 'prob': 1.0/16.0},
+        'no_op':        {'function': 'NoOp', 'params': {}, 'prob': 1.0/16.0}
+    }
+
+train:
+    batch_size: 64
+    eval_batch_size: 64
+    max_epochs: 20
+    epochs_to_eval: 19
+    optimizer:
+        name: RMSprop #RMSprop, Adam, AdamW, SGD
+        params:
+            lr: 0.001
+            alpha: 0.9
+            eps: 0.0000001
+            momentum: 0.0
+            centered: True
+    fitness_metric: best_loss
+    lr_scheduler: TFScheduler # for retrain
+    lr_scheduler_train: None
+    criterion:
+        name: MSELoss #CrossEntropyLoss, MSELoss, L1Loss, RMSELoss
+        params:
+            reduction: mean
+    mo_metric_base: loss
+    mixed_precision: False
+    available_gpus: [0, 1] # gpu0, gpu1, gpu2 [0, 1, 2]
+    device: cuda:0
+    allow_duplicate_architectures: False
+
+    # Dataset
+    dataset: turbofan_fd002_multihead_train
+    file_extension: csv
+    exp_path_base: exp_FD002
+    exp: exp_v15
+    log_level: INFO
+    repeat: 4 # repetions for search
+    dataloader_class: TurbofanMultiHeadDataLoader
+
+    data_augmentation: False
+    subtract_mean: True
+    limit_data: True
+    limit_data_value: 10000
+    num_workers: 0
+    num_classes: 1
+    task: regression
+    dataset_type: multihead
+
+    # Tensorflow
+    save_checkpoints_epochs: 5
+    save_summary_epochs: 0.25
+    threads: 20
+
+    # penalization parameters - scalarized fitness
+    max_params: 114090 # 1.9M
+    max_inference_time: 1000 # us
+
+    # Network structure Configuration
+    network_config: default
+    network_gap: False
+
+    # Params for retrain:
+    batch_size_retrain: 64
+    eval_batch_size_retrain: 64
+    max_epochs_retrain: 30
+    num_repetitions_retrain: 5 # repetions for retrain
+
+    # problem-specific parameters
+    extra_params:
+        shared_head_architecture: True
+        num_sensors: 14
+        dataset_test: turbofan_fd002_multihead_test
+        file_extension_test: csv
+        cols_non_sensor: ['unit_nr', 'cycles', 'os_1', 'os_2', 'RUL']
+        sequence_length: 20
+        stride: 1
+        in_channels: 1
+        val_split: 0.1
+        piecewise_lin_ref: 125
+        RUL_FD_test_file: RUL_FD002.txt

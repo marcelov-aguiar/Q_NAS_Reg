@@ -77,7 +77,8 @@ train:
             momentum: 0.0
             centered: True
     fitness_metric: best_loss
-    lr_scheduler: TFScheduler
+    lr_scheduler: TFScheduler # for retrain
+    lr_scheduler_train: None
     criterion:
         name: MSELoss #CrossEntropyLoss, MSELoss, L1Loss, RMSELoss
         params:

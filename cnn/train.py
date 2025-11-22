@@ -20,6 +20,9 @@ from cnn import model, input, metrics, fitness_utils
 from util import create_info_file, init_log, load_yaml
 from torch.cuda.amp import GradScaler
 import torch.nn.init as init
+from torch.optim.lr_scheduler import ReduceLROnPlateau, ExponentialLR, CosineAnnealingLR, MultiStepLR
+from torch.optim.lr_scheduler import LambdaLR
+from cnn.train_detailed import TFScheduler, keras_style_scheduler
 
 
 TRAIN_TIMEOUT = 5400
@@ -250,6 +253,23 @@ def train(model:torch.nn.Module,
     # Automatic mixed precision training (AMP)
     scaler = GradScaler(enabled=params['mixed_precision']) 
 
+    milestones = [int(0.5 * max_epochs), int(0.75 * max_epochs)]
+    scheduler_type = params['lr_scheduler_train']
+    if scheduler_type == 'exponential':
+        lr_scheduler = ExponentialLR(optimizer, gamma=0.9)
+    elif scheduler_type == 'reduce_on_plateau':
+        lr_scheduler = ReduceLROnPlateau(optimizer, patience=5, factor=0.1)
+    elif scheduler_type == 'cosine':
+        lr_scheduler = CosineAnnealingLR(optimizer, T_max=max_epochs, eta_min=0, last_epoch=-1)
+    elif scheduler_type == 'multistep':
+        lr_scheduler = MultiStepLR(optimizer, milestones=milestones, gamma=0.1)
+    elif scheduler_type == 'LambdaLR':
+        lr_scheduler = LambdaLR(optimizer, lr_lambda=lr_schedule)
+    elif scheduler_type == 'TFScheduler':
+        lr_scheduler = TFScheduler(optimizer, keras_style_scheduler)
+    else:
+        lr_scheduler = None
+
     # Check which metric to calculate
     if params['task'] == 'multi-class' or params['task'] == 'classification':
         metric_name = "accuracy"
@@ -270,7 +290,9 @@ def train(model:torch.nn.Module,
         if epoch < start_eval and (time.time() - params['t0']) > TRAIN_TIMEOUT:
             print("Timeout reached")
             raise TimeoutError()
-        
+
+        validation_loss = None
+        val_metric = None
         if epoch > start_eval:
             validation_loss, val_metric = evaluate(model, criterion, val_loader, params)
             validation_losses.append(validation_loss)
@@ -287,8 +309,16 @@ def train(model:torch.nn.Module,
             if validation_loss < best_validation_loss:
                 best_validation_loss = validation_loss
                 create_info_file(params['model_path'], {'best_validation_loss': best_validation_loss}, 'best_validation_loss.txt')
+        
+        if lr_scheduler is not None:
+            if scheduler_type == 'reduce_on_plateau':
+                if (validation_loss is not None):
+                    lr_scheduler.step(validation_loss)                
+            else:
+                lr_scheduler.step()
+
     if debug:
-        if epoch >= start_eval:
+        if epoch >= start_eval and val_metric is not None:
             print(f"Epoch [{epoch}/{max_epochs}] - Training Loss: {train_loss:.4f} - Validation Loss: {validation_loss:.4f} - Validation {metric_name}: {val_metric:.2f}%")
         elif epoch % 5 == 0:
             print(f"Epoch [{epoch}/{max_epochs}] - Training Loss: {train_loss:.4f}")

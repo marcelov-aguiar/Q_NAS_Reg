@@ -75,7 +75,8 @@ train:
             momentum: 0.0
             centered: True
     fitness_metric: best_loss
-    lr_scheduler: LambdaLR
+    lr_scheduler: LambdaLR # for retrain
+    lr_scheduler_train: None
     criterion:
         name: MSELoss #CrossEntropyLoss, MSELoss, L1Loss, RMSELoss
         params:
