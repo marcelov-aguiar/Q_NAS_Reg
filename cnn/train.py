@@ -13,6 +13,7 @@ Documentation:
 import os
 import time
 import numpy as np
+import copy
 import torch
 import torch.nn as nn
 from typing import Dict, List, Union, Any
@@ -251,7 +252,12 @@ def train(model:torch.nn.Module,
     start_eval = max_epochs - epochs_to_eval
     
     # Automatic mixed precision training (AMP)
-    scaler = GradScaler(enabled=params['mixed_precision']) 
+    scaler = GradScaler(enabled=params['mixed_precision'])
+
+    # Define o caminho do modelo
+    best_model_path = os.path.join(params['model_path'], 'temp_best_model_6e31.pth')
+    # Variável para segurar os pesos na memória RAM
+    best_model_state = None
 
     milestones = [int(0.5 * max_epochs), int(0.75 * max_epochs)]
     scheduler_type = params['lr_scheduler_train']
@@ -302,10 +308,13 @@ def train(model:torch.nn.Module,
                 if val_metric < best_val_metric:
                     best_val_metric = val_metric
                     create_info_file(params['model_path'], {f'best_{metric_name}': best_val_metric}, f'best_{metric_name}.txt')
+                    best_model_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
             else:
                 if val_metric > best_val_metric:
                     best_val_metric = val_metric
                     create_info_file(params['model_path'], {f'best_{metric_name}': best_val_metric}, f'best_{metric_name}.txt')
+                    best_model_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
+
             if validation_loss < best_validation_loss:
                 best_validation_loss = validation_loss
                 create_info_file(params['model_path'], {'best_validation_loss': best_validation_loss}, 'best_validation_loss.txt')
@@ -322,7 +331,12 @@ def train(model:torch.nn.Module,
             print(f"Epoch [{epoch}/{max_epochs}] - Training Loss: {train_loss:.4f} - Validation Loss: {validation_loss:.4f} - Validation {metric_name}: {val_metric:.2f}%")
         elif epoch % 5 == 0:
             print(f"Epoch [{epoch}/{max_epochs}] - Training Loss: {train_loss:.4f}")
-            
+
+    # SALVAMENTO FINAL NO DISCO (Apenas 1 vez)
+    if best_model_state is not None:
+        torch.save(best_model_state, best_model_path)
+        LOGGER.info(f"Best model saved to {best_model_path}")
+
     params['t1'] = time.time()
     params['training_time'] = params['t1'] - params['t0']
     

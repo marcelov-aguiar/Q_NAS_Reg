@@ -59,8 +59,8 @@ QNAS:
 train:
     batch_size: 400
     eval_batch_size: 400
-    max_epochs: 2
-    epochs_to_eval: 1
+    max_epochs: 3
+    epochs_to_eval: 2
     optimizer:
         name: RMSprop #RMSprop, Adam, AdamW, SGD
         params:
