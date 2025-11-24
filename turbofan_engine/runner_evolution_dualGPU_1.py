@@ -15,11 +15,11 @@ if __name__ == "__main__":
 	# config_dir = os.path.join(base_path, "config_files")
 	# config_files = [f for f in os.listdir(config_dir) if f.endswith(".txt")]
 	# TODO: Colocar para rodar na dualGPU, ainda está com a versão antiga
-	config_files = [		
-		# "FD004/config_files/config_turbofan_FD004_v9.txt",
-		#"FD004/config_files/config_turbofan_FD004_v10.txt",
-		"FD004/config_files/config_turbofan_FD004_v11.txt"
-		# "FD004/config_files/config_turbofan_FD004_v12.txt" esta na LIRA 132
+	config_files = [
+		"FD001/config_files/config_turbofan_FD001_v55.txt", # executar com LR na avoluçãos
+		"FD002/config_files/config_turbofan_FD002_v24.txt", # executar com LR na avolução
+		"FD003/config_files/config_turbofan_FD003_v23.txt", # executar com LR na avolução
+		"FD004/config_files/config_turbofan_FD004_v25.txt" # executar com LR na avolução
 	]
 	for cfg in config_files:
 		config_path = os.path.join(base_path, cfg)

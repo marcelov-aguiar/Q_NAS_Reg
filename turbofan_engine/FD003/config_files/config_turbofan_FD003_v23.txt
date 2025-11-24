@@ -4,26 +4,22 @@
 # teoricamente espero bons resultados
 # coloquei allow_duplicate_architectures como True pois ainda nao implementei deteccao de
 # net e parametros em conjunto que sao duplicados
-
 # Esse config e para executar com a correcao do calculo da metrica RMSE que estava por batch
 # Agora o calculo da metrica esta por amostra e não batch
-# Semelhante ao v2, mas com mais geracoes e as configuracoes base da daniela
-# Semelhante ao v11, mas com multi head
-# Semelhante ao v8, mas com UQG 2, UQR 0,3 max_update 0,15
-# Igual ao v10, mas com TFScheduler
-# Igual ao v20, mas com TFScheduler no treino e 100 gerações
+# Igual ao v2, mas com TFScheduler
+# Igual a v17, mas com TFScheduler na evolucao
 
 
 QNAS:
     crossover_rate: 0.5
-    max_generations: 100
+    max_generations: 20
     max_num_nodes: 6
-    num_quantum_ind: 5
+    num_quantum_ind: 4
     penalize_number: 3
-    repetition: 4
+    repetition: 5
     replace_method: best
-    update_quantum_gen: 2
-    update_quantum_rate: 0.3
+    update_quantum_gen: 5
+    update_quantum_rate: 0.1
     save_data_freq: 10
     crossover_frequency: 5
     pop_crossover_rate: 0.25
@@ -31,7 +27,7 @@ QNAS:
     patience: 10
     early_stopping: False
     en_pop_crossover: False
-    max_update: 0.15
+    max_update: 0.05
 
     params_type:
         decay: float
@@ -97,9 +93,9 @@ train:
     dataset: turbofan_fd003_multihead_train
     file_extension: csv
     exp_path_base: exp_FD003
-    exp: exp_v22
+    exp: exp_v23
     log_level: INFO
-    repeat: 1 # repetions for search
+    repeat: 3 # repetions for search
     dataloader_class: TurbofanMultiHeadDataLoader
 
     data_augmentation: False
@@ -114,7 +110,7 @@ train:
     # Tensorflow
     save_checkpoints_epochs: 5
     save_summary_epochs: 0.25
-    threads: 6
+    threads: 20
 
     # penalization parameters - scalarized fitness
     max_params: 114090 # 1.9M
@@ -132,7 +128,7 @@ train:
 
     # problem-specific parameters
     extra_params:
-        shared_head_architecture: False
+        shared_head_architecture: True
         num_sensors: 14
         dataset_test: turbofan_fd003_multihead_test
         file_extension_test: csv

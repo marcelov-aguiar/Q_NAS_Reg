@@ -35,15 +35,16 @@ if __name__ == "__main__":
 		# "FD004/config_files/config_turbofan_FD004_v12.txt",
 		# "FD004/config_files/config_turbofan_FD004_v13.txt",
 		# "FD004/config_files/config_turbofan_FD004_v14.txt",
-		"FD004/config_files/config_turbofan_FD004_v15.txt",
-		"FD004/config_files/config_turbofan_FD004_v16.txt",
-		"FD004/config_files/config_turbofan_FD004_v17.txt",
-		"FD004/config_files/config_turbofan_FD004_v18.txt",
-		"FD004/config_files/config_turbofan_FD004_v19.txt",
-		"FD004/config_files/config_turbofan_FD004_v20.txt",
-		"FD004/config_files/config_turbofan_FD004_v21.txt",
-		"FD004/config_files/config_turbofan_FD004_v22.txt",
-		"FD004/config_files/config_turbofan_FD004_v23.txt"
+		# "FD004/config_files/config_turbofan_FD004_v15.txt",
+		# "FD004/config_files/config_turbofan_FD004_v16.txt",
+		# "FD004/config_files/config_turbofan_FD004_v17.txt",
+		# "FD004/config_files/config_turbofan_FD004_v18.txt",
+		# "FD004/config_files/config_turbofan_FD004_v19.txt",
+		# "FD004/config_files/config_turbofan_FD004_v20.txt",
+		# "FD004/config_files/config_turbofan_FD004_v21.txt",
+		# "FD004/config_files/config_turbofan_FD004_v22.txt",
+		# "FD004/config_files/config_turbofan_FD004_v23.txt"
+		"FD001/config_files/config_turbofan_FD001_v53.txt"
 	]
 	for cfg in config_files:
 		config_path = os.path.join(base_path, cfg)

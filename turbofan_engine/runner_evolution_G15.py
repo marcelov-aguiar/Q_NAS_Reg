@@ -15,9 +15,7 @@ if __name__ == "__main__":
 	# config_dir = os.path.join(base_path, "config_files")
 	# config_files = [f for f in os.listdir(config_dir) if f.endswith(".txt")]
 	config_files = [
-		"FD004/config_files/config_turbofan_FD004_v24.txt",
-		"FD003/config_files/config_turbofan_FD003_v22.txt",
-		"FD002/config_files/config_turbofan_FD002_v23.txt"
+		"FD003/config_files/config_turbofan_FD003_v22.txt"
 	]
 	for cfg in config_files:
 		config_path = os.path.join(base_path, cfg)
