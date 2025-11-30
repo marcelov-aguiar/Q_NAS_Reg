@@ -63,6 +63,7 @@ INITIAL_PROBS = "initial_probs"
 
 DECODED_PARAMS = "decoded_params"
 NET_LIST = "net_list"
+NET_PROBS = "net_probs"
 TOTAL_FLOPS = "total_flops"
 TOTAL_TRAINABLE_PARAMS = "total_trainable_params"
 TRAINING_TIME = "training_time"

@@ -20,3 +20,4 @@ jupyter
 protobuf>=3.20,<4
 mlflow==2.17.2
 pydantic==1.10.13
+pyarrow==17.0.0

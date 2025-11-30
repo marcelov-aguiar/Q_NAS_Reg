@@ -54,6 +54,122 @@ model_metrics_to_save = [
 ]
 
 
+def calculate_convergence_metrics(data_qnas_dict: Dict[int, Any],
+                                  update_interval: int = 1) -> Dict[str, float]:
+    """
+    Calcula métricas de convergência e dinâmica evolutiva baseadas na variação
+    das probabilidades (SAD - Sum of Absolute Differences).
+
+    Parameters
+    ----------
+    data_qnas_dict : Dict[int, Any]
+        Dicionário contendo os dados de log do Q-NAS. As chaves devem ser
+        o número da geração (int) e os valores devem conter a chave 'net_probs'
+        com as matrizes de probabilidade (shape: [n_ind, n_nodes, n_funcs]).
+    
+    update_interval : int, optional
+        O intervalo de gerações em que o algoritmo efetivamente aplica a
+        atualização quântica (parâmetro `update_quantum_gen` do config).
+        O padrão é 1.
+        
+        Importante: Usar o valor correto evita o cálculo de "falsa inatividade"
+        nos intervalos onde o algoritmo está programado para não fazer nada.
+
+    Returns
+    -------
+    Dict[str, float]
+        Um dicionário contendo as seguintes métricas:
+        
+        * 'sad_mean': Média do SAD de toda a população (Início vs. Fim).
+        * 'sad_std': Desvio padrão do SAD da população.
+        * 'sad_elite': SAD total do primeiro indivíduo (Rank 0 / Melhor).
+        * 'sad_bottom': SAD total do último indivíduo (Rank N / Pior).
+        * 'inactivity_rate': Proporção de atualizações onde a mudança foi nula (zero).
+
+    Notes
+    -----
+    **Interpretação das Métricas:**
+
+    1. **SAD (Sum of Absolute Differences):**
+       Mede a "quantidade de aprendizado" ou movimentação da massa de probabilidade.
+       Calculado como ``sum(|Prob_Final - Prob_Inicial|)``.
+       
+       * **SAD Alto:** O indivíduo convergiu ou mudou drasticamente de opinião. 
+         Indica uma evolução forte e decisiva.
+       * **SAD Baixo (~0):** O indivíduo terminou a evolução na mesma dúvida 
+         que começou (estagnação). Indica falha no aprendizado.
+
+    2. **Elite vs. Bottom (`sad_elite` vs `sad_bottom`):**
+       Compara a qualidade do aprendizado entre o melhor e o pior indivíduo.
+       
+       * **Gap Alto (Elite >> Bottom):** Confirma o problema do "Professor Ruim".
+         O melhor indivíduo aprende com o melhor clássico e evolui bem. O último
+         aprende com um clássico medíocre e fica confuso/estagnado.
+       * **Gap Baixo:** A população evolui de forma homogênea (sinal saudável).
+
+    3. **Taxa de Inatividade (`inactivity_rate`):**
+       Mede a frequência com que os indivíduos "dormem" durante uma rodada de atualização.
+       
+       * **Valor Alto (> 0.5):** Indica que a máscara aleatória está bloqueando
+         atualizações com muita frequência. Isso ocorre geralmente quando se tem
+         muitos indivíduos e poucos blocos (genes), tornando estatisticamente
+         raro um indivíduo ser selecionado para atualização.
+       * **Valor Baixo (< 0.2):** O fluxo de atualização é constante e saudável.
+    """
+    generations = sorted(data_qnas_dict.keys())
+    if not generations:
+        return None
+
+    start_gen = generations[0]
+    end_gen = generations[-1]
+
+    # Matrizes de Probabilidade: Shape (Num_Individuos, Num_Nos, Num_Funcoes)
+    probs_start = data_qnas_dict[start_gen][names.NET_PROBS]
+    probs_end = data_qnas_dict[end_gen][names.NET_PROBS]
+
+    # --- 1. SAD Total (Inicio vs Fim) ---
+    # Diferença absoluta entre a última e a primeira geração
+    diff_total = np.abs(probs_end - probs_start)
+    sad_per_ind = np.sum(diff_total, axis=(1, 2))
+
+    mean_sad = float(np.mean(sad_per_ind))
+    std_sad = float(np.std(sad_per_ind))
+    first_ind_sad = float(sad_per_ind[0])   # Elite (assumindo que ind 0 é o melhor)
+    last_ind_sad = float(sad_per_ind[-1])   # Bottom
+
+    # --- 2. Inatividade (Geração a Geração) ---
+    inactive_count = 0
+    total_comparisons = 0
+    threshold = 1e-6 # Consideramos 0 se a mudança for muito ínfima
+
+    # Percorre geração por geração para ver quem "dormiu"
+    for i in range(0, len(generations) - update_interval, update_interval):
+        g_curr = generations[i]
+        g_next = generations[i + update_interval]
+
+        if g_next not in data_qnas_dict:
+            break
+
+        p_curr = data_qnas_dict[g_curr]['net_probs']
+        p_next = data_qnas_dict[g_next]['net_probs']
+        
+        # SAD de um passo (step)
+        step_sad = np.sum(np.abs(p_next - p_curr), axis=(1, 2))
+        
+        # Conta quantos indivíduos tiveram SAD quase zero nessa transição
+        inactive_count += np.sum(step_sad < threshold)
+        total_comparisons += len(step_sad)
+
+    inactivity_rate = inactive_count / total_comparisons if total_comparisons > 0 else 0.0
+
+    return {
+        "sad_mean": mean_sad,
+        "sad_std": std_sad,
+        "sad_elite": first_ind_sad,
+        "sad_bottom": last_ind_sad,
+        "inactivity_rate": inactivity_rate
+    }
+
 
 def generate_training_curves(data: Dict[str, Any]) -> Dict[str, plt.Figure]:
     """Generates training and validation curves (loss and RMSE) and returns them as matplotlib figures."""
@@ -122,6 +238,9 @@ def log_repeat_run(base_exp_path: str, repeat_id: int, retrain_data_list: List[D
                    parent_id: str, exp_name: str,
                    log_params_evolution: LogParamsEvolution, config_data: Dict[str, Any]):
     """Logs one search repeat (search_repeat_X) and all its retrain runs."""
+
+    qnas_metrics_export = None
+
     with mlflow.start_run(run_name=f"search_repeat_{repeat_id}", nested=True, parent_run_id=parent_id):
         test_rmses = []
         best_retrain = None
@@ -204,11 +323,33 @@ def log_repeat_run(base_exp_path: str, repeat_id: int, retrain_data_list: List[D
                     )
                     mlflow.log_figure(fig_hp, f"plots/qnas_hyperparams_ind_{ind_idx}.png")
                     plt.close(fig_hp)
+                
+                # Metrics Sum of Absolute Differences and inactivity
+                update_interval = int(config_data.get(names.QNAS, {}).get("update_quantum_gen", 1))
+                mlflow.log_param("actual_update_interval", update_interval)
+
+                qnas_metrics = calculate_convergence_metrics(data_qnas.data_qnas, update_interval)
+                
+                if qnas_metrics:
+                    # Loga métricas locais desta busca no MLFlow
+                    mlflow.log_metric("qnas_sad_mean", qnas_metrics["sad_mean"])
+                    mlflow.log_metric("qnas_sad_std", qnas_metrics["sad_std"])
+                    mlflow.log_metric("qnas_inactivity_rate", qnas_metrics["inactivity_rate"])
+                    mlflow.log_metric("qnas_sad_elite", qnas_metrics["sad_elite"])
+                    mlflow.log_metric("qnas_sad_bottom", qnas_metrics["sad_bottom"])
+                    
+                    # Prepara dados para retornar ao experimento pai (para cálculo de médias globais)
+                    qnas_metrics_export = {
+                        "elite": qnas_metrics["sad_elite"],
+                        "bottom": qnas_metrics["sad_bottom"],
+                        "mean_sad": qnas_metrics["sad_mean"],
+                        "inactivity": qnas_metrics["inactivity_rate"]
+                    }
 
         except Exception as e:
             logger.warning(f"⚠️ Failed to log QNAS evolution for repeat {repeat_id}: {e}")
 
-        return best_retrain
+        return best_retrain, qnas_metrics_export
 
 
 def log_experiment_run(data_set: str,
@@ -236,10 +377,15 @@ def log_experiment_run(data_set: str,
         best_retrain_info = None
         best_repeat_id = None
 
+        all_elite_sads = []
+        all_bottom_sads = []
+        all_mean_sads = []       
+        all_inactivity_rates = []
+
         for repeat_id, retrain_data_list in repeat_data.items():
             log_params_evolution_path = base_exp_path / f"{exp_name}_repeat_{repeat_id}" / names.LOG_PARAMS_EVOLUTION_TXT
             log_params_evolution = LogParamsEvolution(log_params_evolution_path)
-            best_retrain = log_repeat_run(base_exp_path, repeat_id, retrain_data_list, main_run.info.run_id,
+            best_retrain, qnas_metrics_export = log_repeat_run(base_exp_path, repeat_id, retrain_data_list, main_run.info.run_id,
                                           exp_name, log_params_evolution, config_data)
             if best_retrain:
                 best_test_rmses.append(best_retrain["rmse"])
@@ -249,6 +395,27 @@ def log_experiment_run(data_set: str,
                     best_retrain_info = best_retrain
                     best_repeat_id = repeat_id
 
+            if qnas_metrics_export:
+                all_elite_sads.append(qnas_metrics_export["elite"])
+                all_bottom_sads.append(qnas_metrics_export["bottom"])
+                all_mean_sads.append(qnas_metrics_export["mean_sad"])          
+                all_inactivity_rates.append(qnas_metrics_export["inactivity"])
+        
+        # Metrics Sum of Absolute Differences and inactivity
+        if all_elite_sads: # Se coletou de pelo menos uma rodada
+            # 1. Média da Inatividade Global (Sua dúvida principal sobre o 'mask')
+            mlflow.log_metric("exp_avg_inactivity_rate", float(np.mean(all_inactivity_rates)))
+            
+            # 2. Média do SAD Global das rodadas de busca
+            mlflow.log_metric("exp_avg_search_sad", float(np.mean(all_mean_sads)))
+
+            # 3. Análise Elite vs Bottom (Média das 3 rodadas)
+            mean_elite = np.mean(all_elite_sads)
+            mean_bottom = np.mean(all_bottom_sads)
+            
+            mlflow.log_metric("exp_avg_sad_elite", float(mean_elite))
+            mlflow.log_metric("exp_avg_sad_bottom", float(mean_bottom))
+        
         # --- Main experiment metrics (test metrics aggregated) ---
         if best_test_rmses:
             mlflow.log_metric("exp_best_test_rmse", float(np.min(best_test_rmses)))
@@ -327,7 +494,7 @@ def extract_version(filename):
 # ==========================================================
 
 if __name__ == "__main__":
-    for dataset in ["FD001"]:#["FD001", "FD002", "FD003", "FD004"]:
+    for dataset in ["FD001", "FD002", "FD003", "FD004"]:
         # dataset = "FD001"
         base_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -335,9 +502,17 @@ if __name__ == "__main__":
         config_files = [f for f in os.listdir(config_dir) if f.endswith(".txt")]
         # Sort by numeric version
         config_files = sorted(config_files, key=extract_version)
-        config_files = [
-            "config_turbofan_FD001_v53.txt"
-        ]
+        # config_files = [
+        #     #"config_turbofan_FD001_v54.txt", # rodando no PC LARI
+        #     #"config_turbofan_FD001_v55.txt"
+        #     #"config_turbofan_FD002_v24.txt"
+        #     #"config_turbofan_FD003_v23.txt"
+        #     "config_turbofan_FD001_v102.txt"
+        #     #"config_turbofan_FD004_v25.txt"
+        #     #"config_turbofan_FD003_v22.txt", # rodando no PC LARI
+        #     #"config_turbofan_FD002_v22.txt", # rodando no PC LARI
+        #     #"config_turbofan_FD001_v23.txt", # rodando no PC LARI
+        # ]
         for config_name in config_files:
             dataset = config_name.split("_")[2]
             try:

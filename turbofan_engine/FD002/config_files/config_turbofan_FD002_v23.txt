@@ -103,7 +103,7 @@ train:
     exp_path_base: exp_FD002
     exp: exp_v23
     log_level: INFO
-    repeat: 1 # repetions for search
+    repeat: 3 # repetions for search
     dataloader_class: TurbofanMultiHeadDataLoader
 
     data_augmentation: False

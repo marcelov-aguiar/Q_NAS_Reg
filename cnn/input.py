@@ -12,14 +12,10 @@ import os
 import numpy as np
 import pandas as pd
 from time import time
-import torchvision.datasets
-from torch.utils.data import DataLoader, Subset, Dataset
-from torchvision.transforms import ToTensor, Resize, Compose, Normalize, TrivialAugmentWide
-from sklearn.model_selection import StratifiedShuffleSplit
-import medmnist
-from medmnist import INFO
+from torch.utils.data import DataLoader, Dataset
 from typing import Dict, Tuple, List
 from abc import ABC, abstractmethod
+from femto.preprocessing.femto_utils import FemtoNetworkLauncher
 
 cifar10_info = {
   'dataset': 'CIFAR10',
@@ -326,6 +322,178 @@ class TurbofanMultiHeadDataLoader(BaseDataLoader):
     val_targets = np.concatenate(val_targets_list, axis=0)
 
     return train_inputs, val_inputs, train_targets, val_targets
+
+
+class FemtoMultiHeadDataLoader(BaseDataLoader):
+    def __init__(self, params: dict, info: dict = {}):
+        super().__init__(params, info)
+
+    def get_train_dataset_info(self) -> dict:
+        # Caminho para o arquivo final_train.parquet
+        data_path = os.path.join(self.params['data_path'],
+                                 f"{self.params['dataset']}.{self.params['file_extension']}")
+        # Leitura rápida só para pegar colunas
+        data = pd.read_parquet(data_path)
+        
+        cols_non_sensor = self.params['extra_params']['cols_non_sensor']
+        cols_to_drop = self.params['extra_params']['cols_to_drop']
+
+        # Filtra para garantir que existem no arquivo (segurança)
+        existing_drop = [c for c in cols_to_drop if c in data.columns]
+        existing_non_sensor = [c for c in cols_non_sensor if c in data.columns]
+        
+        # Num sensors = Total - (Metadados Excluídos) - (Estruturais Mantidas)
+        self.info_dict['num_sensors'] = len(data.columns) - len(existing_drop) - len(existing_non_sensor)
+        
+        # Params task
+        self.info_dict['shape'] = [None, None, None]
+        self.info_dict['num_classes'] = self.params["num_classes"]
+        self.info_dict['task'] = self.params["task"]
+        return self.info_dict
+
+    def get_train_val_test_dataset(self, individual: List[str]):
+        # Carrega hiperparâmetros do indivíduo (Q-NAS) ou fixos
+        # No Q-NAS o tamanho da janela (kernel) define o 'window_length' da CNN
+        window_length = self._get_windows_length_from_individual(individual)
+        cols_to_drop = self.params['extra_params']['cols_to_drop']
+        cols_non_sensor = self.params['extra_params']['cols_non_sensor']
+
+        # --- TREINO e VALIDAÇÃO ---
+        train_path = os.path.join(self.params['data_path'],
+                                 f"{self.params['dataset']}.{self.params['file_extension']}")
+        
+        # Chama o Launcher
+        launcher = FemtoNetworkLauncher()
+        df_train_raw, _ = launcher.process_data(
+           train_path,
+           cols_to_drop=cols_to_drop,
+           cols_non_sensor=cols_non_sensor,
+           scaler_path=os.path.join(self.params['data_path'], self.params['extra_params']["scaler_name"]),
+           piecewise_lin_ref=self.params["extra_params"]["piecewise_lin_ref"]
+        )
+        
+        # Gera Inputs X e Y
+        X_full, y_full = launcher.input_generator(
+            df_train_raw,
+            cols_non_sensor=cols_non_sensor,
+            sequence_length=self.params["extra_params"]["sequence_length"],
+            stride=self.params["extra_params"]["stride"],
+            window_length=window_length
+        )
+        
+        # Split Treino/Validação (Mantendo ordem temporal ou por bearing)
+        # Usando a função split do BaseDataLoader
+        X_train, X_val, y_train, y_val = self.__split_train_val(X_full, y_full, val_ratio=0.1)
+
+        # Converte para Tensores
+        X_train = [torch.tensor(s, dtype=torch.float32) for s in X_train]
+        X_val = [torch.tensor(s, dtype=torch.float32) for s in X_val]
+        
+        train_dataset = CustomDatasetMultiHead(X_train, torch.tensor(y_train, dtype=torch.float32))
+        valid_dataset = CustomDatasetMultiHead(X_val, torch.tensor(y_val, dtype=torch.float32))
+
+        # --- TESTE ---
+        test_path = os.path.join(self.params['data_path'],
+                                 f"{self.params['extra_params']['dataset_test']}.{self.params['extra_params']['file_extension_test']}")
+        
+        # Processa teste (train=False usa o scaler salvo)
+        df_test_raw, _ = launcher.process_data(
+           data_path=test_path,
+           cols_to_drop=cols_to_drop,
+           cols_non_sensor=cols_non_sensor,
+           scaler_path=os.path.join(self.params['data_path'], self.params['extra_params']["scaler_name"]),
+           piecewise_lin_ref=self.params["extra_params"]["piecewise_lin_ref"]
+        )
+        
+        X_test_np, y_test_np = launcher.input_generator(
+            df_test_raw,
+            cols_non_sensor=cols_non_sensor,
+            sequence_length=self.params["extra_params"]["sequence_length"],
+            stride=self.params["extra_params"]["stride"],
+            window_length=window_length
+        )
+        
+        X_test = [torch.tensor(s, dtype=torch.float32) for s in X_test_np]
+        test_dataset = CustomDatasetMultiHead(X_test, torch.tensor(y_test_np, dtype=torch.float32))
+
+        return train_dataset, valid_dataset, test_dataset
+
+    def _get_windows_length_from_individual(self,
+                                          individual: List[str]) -> int:
+        """
+        Extracts the window length from the first convolutional layer
+        encoded in an individual's genotype.
+
+        This function assumes that each gene in the genotype is represented as
+        a string with the format: 'conv_<kernel>_<stride>_<filters>', where:
+            - <kernel>  (int): size of the convolutional kernel
+            - <stride>  (int): stride of the convolution
+            - <filters> (int): number of convolutional filters
+
+        The window length is defined here as the kernel size of the *first*
+        convolutional layer in the genotype. Only the first element of the list
+        is parsed to extract this value.
+
+        Parameters
+        ----------
+        individual : list of str
+            The genotype of the individual, where each element encodes a
+            convolutional layer in the format described above.
+            Example: ['conv_2_1_3', 'conv_3_2_64']
+
+        Returns
+        -------
+        int
+            The window length, i.e., the kernel size of the first convolution.
+        """
+        for ind in individual:
+          if ind.startswith('conv'):
+              parts = ind.split('_')
+              if len(parts) >= 4:
+                  return int(parts[1])
+        return 5 # Default window length if no conv layer is found
+
+    def __split_train_val(self,
+                            inputs: List[np.ndarray],
+                            targets: np.ndarray, val_ratio=0.1):
+        """
+        Divide os dados de entrada (por sensor) e os rótulos (contínuos) entre treino e validação,
+        mantendo a ordem temporal.
+
+        Args:
+            inputs (list of np.ndarray): Lista com os dados dos sensores, cada um com shape (N, ...).
+            targets (np.ndarray): Array contínuo com os rótulos, shape (total_N, 1).
+            val_ratio (float): Proporção dos dados para validação (ex: 0.1 = 10%).
+
+        Returns:
+            Tuple: (train_inputs, val_inputs, train_targets, val_targets)
+                   train_inputs e val_inputs são listas com mesmo comprimento de `inputs`;
+                   train_targets e val_targets são np.ndarrays.
+        """
+        train_inputs, val_inputs = [], []
+        train_targets_list, val_targets_list = [], []
+
+        total_samples = 0
+
+        for sensor_data in inputs:
+            n_samples = sensor_data.shape[0]
+            split_idx = int(n_samples * (1 - val_ratio))
+
+            # Divide os dados de entrada por sensor
+            train_inputs.append(sensor_data[:split_idx])
+            val_inputs.append(sensor_data[split_idx:])
+
+            # Seleciona a fatia correspondente dos rótulos globais
+            train_targets_list.append(targets[total_samples:total_samples + split_idx])
+            val_targets_list.append(targets[total_samples + split_idx:total_samples + n_samples])
+
+            total_samples += n_samples
+
+        # Concatena as listas em arrays únicos
+        train_targets = np.concatenate(train_targets_list, axis=0)
+        val_targets = np.concatenate(val_targets_list, axis=0)
+
+        return train_inputs, val_inputs, train_targets, val_targets
 
 class GenericDataLoader:
   """A generic data loader for PyTorch, supporting various datasets and data augmentation."""

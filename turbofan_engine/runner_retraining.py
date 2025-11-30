@@ -44,7 +44,10 @@ if __name__ == "__main__":
 		# "FD004/config_files/config_turbofan_FD004_v21.txt",
 		# "FD004/config_files/config_turbofan_FD004_v22.txt",
 		# "FD004/config_files/config_turbofan_FD004_v23.txt"
-		"FD001/config_files/config_turbofan_FD001_v53.txt"
+		#"FD001/config_files/config_turbofan_FD001_v55.txt", # executar com LR na avoluçãos
+		#"FD002/config_files/config_turbofan_FD002_v24.txt", # executar com LR na avolução
+		#"FD003/config_files/config_turbofan_FD003_v23.txt", # executar com LR na avolução
+		"FD004/config_files/config_turbofan_FD004_v24.txt" # executar com LR na avolução
 	]
 	for cfg in config_files:
 		config_path = os.path.join(base_path, cfg)

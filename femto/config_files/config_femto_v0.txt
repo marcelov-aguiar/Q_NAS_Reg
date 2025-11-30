@@ -7,25 +7,18 @@
 
 # Esse config e para executar com a correcao do calculo da metrica RMSE que estava por batch
 # Agora o calculo da metrica esta por amostra e não batch
-# Semelhante ao V5, porem o update_quantum_rate foi alterado para 0,5. Foi invertido a quantidade
-# de ind quanticos e repeticoes. 5 quantico e 4 repticoes
-# Semelhante ao V10, porem com 40 geracoes
-# Semelhante ao V15, porem com 50 geracoes e as demais configurações base da Daniela
-# Semelhante ao v25, mas com UQG 2, UQR 0,3 max_update 0,15
-# Semelhante ai v26, mas agora aqui é multi Head
-# Igual ao v28, mas com TFScheduler
-# Igual ao v52, mas com TFScheduler no treino e 100 gerações
+# v0 do femto
 
 QNAS:
     crossover_rate: 0.5
-    max_generations: 100
+    max_generations: 20
     max_num_nodes: 6
-    num_quantum_ind: 5
+    num_quantum_ind: 4
     penalize_number: 3
-    repetition: 4
+    repetition: 5
     replace_method: best
-    update_quantum_gen: 2
-    update_quantum_rate: 0.3
+    update_quantum_gen: 5
+    update_quantum_rate: 0.1
     save_data_freq: 10
     crossover_frequency: 5
     pop_crossover_rate: 0.25
@@ -33,7 +26,7 @@ QNAS:
     patience: 10
     early_stopping: False
     en_pop_crossover: False
-    max_update: 0.15
+    max_update: 0.05
 
     params_type:
         decay: float
@@ -96,13 +89,13 @@ train:
     allow_duplicate_architectures: False
 
     # Dataset
-    dataset: turbofan_fd001_multihead_train
-    file_extension: csv
-    exp_path_base: exp_FD001
-    exp: exp_v54
+    dataset: femto_multihead_train
+    file_extension: parquet
+    exp_path_base: exp_femto
+    exp: exp_v0
     log_level: INFO
-    repeat: 2 # repetions for search
-    dataloader_class: TurbofanMultiHeadDataLoader
+    repeat: 3 # repetions for search
+    dataloader_class: FemtoMultiHeadDataLoader
 
     data_augmentation: False
     subtract_mean: True
@@ -116,7 +109,7 @@ train:
     # Tensorflow
     save_checkpoints_epochs: 5
     save_summary_epochs: 0.25
-    threads: 6
+    threads: 20
 
     # penalization parameters - scalarized fitness
     max_params: 114090 # 1.9M
@@ -134,14 +127,16 @@ train:
 
     # problem-specific parameters
     extra_params:
-        shared_head_architecture: False
-        num_sensors: 14
-        dataset_test: turbofan_fd001_multihead_test
-        file_extension_test: csv
-        cols_non_sensor: ['unit_nr', 'cycles', 'os_1', 'os_2', 'RUL']
-        sequence_length: 30
+        shared_head_architecture: True
+        num_sensors: 12
+        dataset_test: femto_multihead_test
+        file_extension_test: parquet
+        cols_non_sensor: ['bearing_id', 'RUL']
+        cols_to_drop: ['file_name', 'sample_idx', 'rul_seconds', 'rul_files', 'elapsed_time', 'delta_seconds', 'dataset_type']
+        sequence_length: 16
         stride: 1
         in_channels: 1
         val_split: 0.1
-        piecewise_lin_ref: 125
+        piecewise_lin_ref: 15000
+        scaler_name: femto_scaler.save
         RUL_FD_test_file: RUL_FD001.txt
