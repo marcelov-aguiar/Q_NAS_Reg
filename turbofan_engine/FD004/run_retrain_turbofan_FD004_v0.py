@@ -65,20 +65,20 @@ def main(**args):
         results_dict["time"] = f"{int(hours):02d}h:{int(mins):02d}m"
         output_dict[f"{config.train_spec['lr_scheduler']}_{config_code}_retrain_{i}"] = results_dict
 
-    # Save results
-    logger.info(f"Saving results ...")
-    if config.train_spec['lr_scheduler']  != "None":
-        file_name = f"retrain_results_{config_code}_{config.train_spec['lr_scheduler']}.txt"
-        save_results_file(out_path=experiment_path, results_dict=output_dict, file_name=file_name)
-    else:
-        save_results_file(out_path=experiment_path, results_dict=output_dict, file_name=f"retrain_results_{config_code}.txt")
+        # Save results
+        logger.info(f"Saving results ...")
+        if config.train_spec['lr_scheduler']  != "None":
+            file_name = f"retrain_results_{config_code}_{i}_{config.train_spec['lr_scheduler']}.txt"
+            save_results_file(out_path=experiment_path, results_dict=output_dict, file_name=file_name)
+        else:
+            save_results_file(out_path=experiment_path, results_dict=output_dict, file_name=f"retrain_results_{config_code}_{i}.txt")
 
     logger.info(f"Retraining finished.")
 
 
 if __name__ == '__main__':
 
-    CONFIG_NAME = "config_turbofan_FD002_v1.txt"
+    CONFIG_NAME = "config_turbofan_FD004_v22.txt"
 
     base_path = os.path.dirname(os.path.abspath(__file__))
     config_path = os.path.join(base_path, 'config_files', CONFIG_NAME)
@@ -101,11 +101,11 @@ if __name__ == '__main__':
     arguments = {
         "retrain_folder": "retrain",
         "config_code": "F12",
-        "max_epochs": 30,
-        "batch_size": 400,
-        "eval_batch_size": 32,
-        "lr_scheduler": config_file['train']['lr_scheduler'], #LambdaLR",
-        "num_workers": 4,
+        "max_epochs": config_file['train']['max_epochs_retrain'], #30,
+        "batch_size": config_file['train']['batch_size_retrain'], #400,
+        "eval_batch_size": config_file['train']['eval_batch_size_retrain'], #32,
+        "lr_scheduler": config_file['train']['lr_scheduler'],
+        "num_workers": config_file['train']['num_workers'], #4,
         "limit_data": False,
         "experiment_path": exp_path,
         "data_path": dataset_path,
@@ -124,7 +124,7 @@ if __name__ == '__main__':
         "log_file_path": '', # For QIEA multihead
         "model_path": '', # For QIEA multihead
         "device": 'cuda',
-        "num_repetitions": 1
+        "num_repetitions": config_file['train']['num_repetitions_retrain'], #1
     }
 
     main(**arguments)

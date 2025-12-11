@@ -494,7 +494,7 @@ def extract_version(filename):
 # ==========================================================
 
 if __name__ == "__main__":
-    for dataset in ["FD001", "FD002", "FD003", "FD004"]:
+    for dataset in ["FD001"]: #["FD001", "FD002", "FD003", "FD004"]:
         # dataset = "FD001"
         base_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -502,17 +502,15 @@ if __name__ == "__main__":
         config_files = [f for f in os.listdir(config_dir) if f.endswith(".txt")]
         # Sort by numeric version
         config_files = sorted(config_files, key=extract_version)
-        # config_files = [
-        #     #"config_turbofan_FD001_v54.txt", # rodando no PC LARI
-        #     #"config_turbofan_FD001_v55.txt"
-        #     #"config_turbofan_FD002_v24.txt"
-        #     #"config_turbofan_FD003_v23.txt"
-        #     "config_turbofan_FD001_v102.txt"
-        #     #"config_turbofan_FD004_v25.txt"
-        #     #"config_turbofan_FD003_v22.txt", # rodando no PC LARI
-        #     #"config_turbofan_FD002_v22.txt", # rodando no PC LARI
-        #     #"config_turbofan_FD001_v23.txt", # rodando no PC LARI
-        # ]
+        config_files = [
+            "config_turbofan_FD001_v54.txt",
+		    "config_turbofan_FD001_v53.txt",
+		    "config_turbofan_FD002_v23.txt",
+		    "config_turbofan_FD002_v22.txt",
+		    "config_turbofan_FD003_v22.txt",
+		    "config_turbofan_FD004_v22.txt",
+		    "config_turbofan_FD004_v24.txt"
+        ]
         for config_name in config_files:
             dataset = config_name.split("_")[2]
             try:

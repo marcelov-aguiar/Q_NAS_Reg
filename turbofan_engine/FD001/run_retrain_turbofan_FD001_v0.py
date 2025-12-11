@@ -78,7 +78,7 @@ def main(**args):
 
 if __name__ == '__main__':
 
-    CONFIG_NAME = "config_turbofan_FD001_v100.txt"
+    CONFIG_NAME = "config_turbofan_FD001_v54.txt"
 
     base_path = os.path.dirname(os.path.abspath(__file__))
     config_path = os.path.join(base_path, 'config_files', CONFIG_NAME)
@@ -92,7 +92,7 @@ if __name__ == '__main__':
     dataset_path = os.path.join(base_path,
                              'data')
 
-    repeat = config_file['train']['repeat']
+    repeat = 3#config_file['train']['repeat']
 
     exp_path = os.path.join(base_path,
                             exp_path_base,

@@ -67,7 +67,7 @@ def delete_run_physical_and_mlflow(experiment_name: str, parent_run_id: str, mlr
 
 # === Exemplo de uso ===
 if __name__ == "__main__":
-    experiment_name = "FD001"
-    parent_run_id = "1dfbb68222484284a80eb498cff2e085"
+    experiment_name = "FD004"
+    parent_run_id = "ce4d4f8d4d2a426298da478ad30bd4f2"
     mlruns_path = "./mlruns"
     delete_run_physical_and_mlflow(experiment_name, parent_run_id, mlruns_path)

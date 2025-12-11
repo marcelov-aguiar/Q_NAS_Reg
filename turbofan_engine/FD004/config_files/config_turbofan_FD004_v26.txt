@@ -4,17 +4,15 @@
 # teoricamente espero bons resultados
 # coloquei allow_duplicate_architectures como True pois ainda nao implementei deteccao de
 # net e parametros em conjunto que sao duplicados
-
 # Esse config e para executar com a correcao do calculo da metrica RMSE que estava por batch
 # Agora o calculo da metrica esta por amostra e não batch
-# Semelhante ao V5, porem o update_quantum_rate foi alterado para 0,5. Foi invertido a quantidade
-# de ind quanticos e repeticoes. 5 quantico e 4 repticoes
-# Semelhante ao V10, porem com 40 geracoes
-# Semelhante ao V15, porem com 50 geracoes e as demais configurações base da Daniela
-# Semelhante ao v25, mas com UQG 2, UQR 0,3 max_update 0,15
-# Semelhante ai v26, mas agora aqui é multi Head
-# Igual ao v28, mas com TFScheduler
-# Igual ao v52, mas com TFScheduler no treino e 100 gerações
+# Coloquei batch igual a 64 para verificar se tem melhoria maior no resultado
+# Semelhante ao V3, mas com mais geracoes e seguindo a configuracao base da Daniela
+# Semelhante ao V9, com UQG 2, UQR 0,3 max_update 0,15
+# Semelhante ao V11, mas com multi head
+# Igual ao v12, mas com TFScheduler
+# Igual ao v23, mas com TFScheduler no treino e 100 gerações
+# Igual ao v24 mas com batch igual a 400
 
 QNAS:
     crossover_rate: 0.5
@@ -96,10 +94,10 @@ train:
     allow_duplicate_architectures: False
 
     # Dataset
-    dataset: turbofan_fd001_multihead_train
+    dataset: turbofan_fd004_multihead_train
     file_extension: csv
-    exp_path_base: exp_FD001
-    exp: exp_v54
+    exp_path_base: exp_FD004
+    exp: exp_v26
     log_level: INFO
     repeat: 3 # repetions for search
     dataloader_class: TurbofanMultiHeadDataLoader
@@ -129,19 +127,19 @@ train:
     # Params for retrain:
     batch_size_retrain: 400
     eval_batch_size_retrain: 400
-    max_epochs_retrain: 20
+    max_epochs_retrain: 30
     num_repetitions_retrain: 5 # repetions for retrain
 
     # problem-specific parameters
     extra_params:
         shared_head_architecture: False
         num_sensors: 14
-        dataset_test: turbofan_fd001_multihead_test
+        dataset_test: turbofan_fd004_multihead_test
         file_extension_test: csv
         cols_non_sensor: ['unit_nr', 'cycles', 'os_1', 'os_2', 'RUL']
-        sequence_length: 30
+        sequence_length: 18
         stride: 1
         in_channels: 1
         val_split: 0.1
         piecewise_lin_ref: 125
-        RUL_FD_test_file: RUL_FD001.txt
+        RUL_FD_test_file: RUL_FD004.txt
