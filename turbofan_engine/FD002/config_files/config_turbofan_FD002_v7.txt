@@ -140,3 +140,4 @@ train:
         val_split: 0.1
         piecewise_lin_ref: 125
         RUL_FD_test_file: RUL_FD002.txt
+        lstm_multiplier: 20

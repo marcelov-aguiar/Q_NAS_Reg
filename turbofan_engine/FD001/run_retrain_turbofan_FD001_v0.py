@@ -92,7 +92,7 @@ if __name__ == '__main__':
     dataset_path = os.path.join(base_path,
                              'data')
 
-    repeat = 3#config_file['train']['repeat']
+    repeat = config_file['train']['repeat']
 
     exp_path = os.path.join(base_path,
                             exp_path_base,
