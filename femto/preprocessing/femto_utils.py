@@ -6,7 +6,13 @@ class FemtoNetworkLauncher(object):
     def __init__(self):
         pass
 
-    def process_data(self, data_path, cols_to_drop, cols_non_sensor, scaler_path: str, piecewise_lin_ref=None):
+    def process_data_train(self,
+                     data_path,
+                     cols_to_drop,
+                     cols_non_sensor,
+                     scaler_path: str,
+                     piecewise_lin_ref=None,
+                     train=True):
         """
         Orquestra o carregamento, limpeza e normalização.
         Args:
@@ -20,21 +26,21 @@ class FemtoNetworkLauncher(object):
         df = FemtoPrep().df_preparation(df, cols_to_drop, piecewise_lin_ref)
         
         # 3. Normalizar (Apenas Features)
-        df, cols_sensors = FemtoPrep().df_preprocessing(df, cols_non_sensor, scaler_path)
+        df, cols_sensors = FemtoPrep().df_preprocessing(df, cols_non_sensor, scaler_path, None, train)
         
         return df, cols_sensors
 
-    def input_generator(self, df, cols_non_sensor, sequence_length=30, stride=1, window_length=3):
+    def input_generator(self, df, cols_sensors, sequence_length=30, stride=1, window_length=3):
         """
         Gera o input para o modelo Multi-Head.
         Args:
-            cols_non_sensor: Colunas que NÃO são features (usado para identificar o X).
+            cols_sensors: Colunas que são features (usado para identificar o X).
         """
         n_window = int((sequence_length - window_length) / stride + 1)
         
         # 1. Gera X (Features janeladas)
-        # O FemtoWindow usa cols_non_sensor para saber o que é Feature
-        seq_array = FemtoWindow().seq_generation(df, cols_non_sensor, sequence_length)
+        # O FemtoWindow usa cols_sensors para saber o que é Feature
+        seq_array = FemtoWindow().seq_generation(df, cols_sensors, sequence_length)
         
         # 2. Formata para Multi-Head (List of Arrays para cada sensor)
         # Shape final: Lista de [Samples, 1, Window, 1] ou similar dependendo da arquitetura

@@ -5,52 +5,56 @@ class FemtoWindow(object):
     @staticmethod
     def gen_sequence(id_df, seq_length, seq_cols):
         """ 
-        Mesma lógica do original: fatia os dados sem padding.
+        Gera janelas deslizantes (Features).
+        CORREÇÃO: Adicionado +1 no range para incluir a última janela possível (Current Step).
         """
         data_matrix = id_df[seq_cols].values
         num_elements = data_matrix.shape[0]
         
-        for start, stop in zip(range(0, num_elements - seq_length), range(seq_length, num_elements)):
+        # Antes: range(0, num_elements - seq_length) -> Parava antes do fim
+        # Agora: range(0, num_elements - seq_length + 1) -> Vai até o fim
+        for start in range(0, num_elements - seq_length + 1):
+            stop = start + seq_length
             yield data_matrix[start:stop, :]
 
     @staticmethod
     def gen_labels(id_df, seq_length, label):
         """ 
-        Mesma lógica do original: alinha o label com o fim da janela.
+        Gera labels alinhados.
+        CORREÇÃO: Alinha o label com o ÚLTIMO passo da janela, não com o próximo.
         """
         data_matrix = id_df[label].values
         num_elements = data_matrix.shape[0]
-        return data_matrix[seq_length:num_elements, :]
-
-    def seq_generation(self, df, cols_non_sensor, sequence_length):
-        '''
-        Gera sequências para TODOS os rolamentos no DataFrame.
-        MUDANÇA: Usa 'bearing_id' em vez de 'unit_nr'.
-        '''
-        sequence_cols = df.columns.difference(cols_non_sensor)
         
-        # Itera sobre cada rolamento único
-        # Isso garante que a janela não misture dados do Bearing1_1 com Bearing1_2
+        # Antes: data_matrix[seq_length:num_elements, :] -> Pegava o próximo (t+1)
+        # Agora: data_matrix[seq_length - 1:num_elements, :] -> Pega o atual (t)
+        return data_matrix[seq_length - 1:num_elements, :]
+
+    def seq_generation(self, df, cols_sensors, sequence_length):
+        sequence_cols = cols_sensors.copy()
+        
         seq_gen = (list(FemtoWindow.gen_sequence(df[df['bearing_id'] == id], sequence_length, sequence_cols))
                    for id in df['bearing_id'].unique())
 
-        # Concatena tudo num arrayzão numpy
-        # O try/except é para evitar erro se algum rolamento for menor que a janela
         clean_seq_gen = [x for x in seq_gen if len(x) > 0]
+        
+        if not clean_seq_gen:
+             # Retorna array vazio com shape correto para evitar erro de concat
+             return np.empty((0, sequence_length, len(sequence_cols)), dtype=np.float32)
+             
         seq_array = np.concatenate(clean_seq_gen).astype(np.float32)
-
         return seq_array
 
     def label_generation(self, df, sequence_length):
-        '''
-        Gera labels para TODOS os rolamentos.
-        '''
         label_gen = [FemtoWindow.gen_labels(df[df['bearing_id'] == id], sequence_length, ['RUL'])
                      for id in df['bearing_id'].unique()]
         
         clean_label_gen = [x for x in label_gen if len(x) > 0]
-        label_array = np.concatenate(clean_label_gen).astype(np.float32)
+        
+        if not clean_label_gen:
+            return np.empty((0, 1), dtype=np.float32)
 
+        label_array = np.concatenate(clean_label_gen).astype(np.float32)
         return label_array
 
     def networkinput_generation(self, seq_array, stride, n_window, window_length):

@@ -15,7 +15,14 @@ from time import time
 from torch.utils.data import DataLoader, Dataset
 from typing import Dict, Tuple, List
 from abc import ABC, abstractmethod
+from sklearn.preprocessing import MinMaxScaler
+import joblib
+import importlib
 from femto.preprocessing.femto_utils import FemtoNetworkLauncher
+from femto.preprocessing.femto_preprocessing import FemtoPrep
+from femto.preprocessing import femto_const
+from sklearn.model_selection import train_test_split
+
 
 cifar10_info = {
   'dataset': 'CIFAR10',
@@ -364,26 +371,36 @@ class FemtoMultiHeadDataLoader(BaseDataLoader):
         
         # Chama o Launcher
         launcher = FemtoNetworkLauncher()
-        df_train_raw, _ = launcher.process_data(
+        df_train_raw, cols_sensors = launcher.process_data_train(
            train_path,
            cols_to_drop=cols_to_drop,
            cols_non_sensor=cols_non_sensor,
            scaler_path=os.path.join(self.params['data_path'], self.params['extra_params']["scaler_name"]),
-           piecewise_lin_ref=self.params["extra_params"]["piecewise_lin_ref"]
+           piecewise_lin_ref=self.params["extra_params"]["piecewise_lin_ref"],
+           train=True
         )
         
-        # Gera Inputs X e Y
-        X_full, y_full = launcher.input_generator(
-            df_train_raw,
-            cols_non_sensor=cols_non_sensor,
-            sequence_length=self.params["extra_params"]["sequence_length"],
-            stride=self.params["extra_params"]["stride"],
-            window_length=window_length
-        )
+        df_train_raw = self.save_target_scaler(df_train_raw)
+        
+        # split baseado no bearing inteiro para validação
+        X_train, X_val, y_train, y_val = \
+          self._split_train_val_bearing(df_train_raw,
+                                        launcher,
+                                        cols_sensors,
+                                        window_length)
+
+        # split de forma temporal
+        # X_full, y_full = launcher.input_generator(
+        #     df_train_raw,
+        #     cols_sensors=cols_sensors,
+        #     sequence_length=self.params["extra_params"]["sequence_length"],
+        #     stride=self.params["extra_params"]["stride"],
+        #     window_length=window_length
+        # )
         
         # Split Treino/Validação (Mantendo ordem temporal ou por bearing)
         # Usando a função split do BaseDataLoader
-        X_train, X_val, y_train, y_val = self.__split_train_val(X_full, y_full, val_ratio=0.1)
+        # X_train, X_val, y_train, y_val = self.__split_train_val(X_full, y_full, val_ratio=0.1)
 
         # Converte para Tensores
         X_train = [torch.tensor(s, dtype=torch.float32) for s in X_train]
@@ -395,19 +412,18 @@ class FemtoMultiHeadDataLoader(BaseDataLoader):
         # --- TESTE ---
         test_path = os.path.join(self.params['data_path'],
                                  f"{self.params['extra_params']['dataset_test']}.{self.params['extra_params']['file_extension_test']}")
+
+        df_test_raw = self._process_data_test(data_path=test_path,
+                                              sequence_length=self.params["extra_params"]["sequence_length"],
+                                              cols_to_drop=cols_to_drop,
+                                              cols_non_sensor=cols_non_sensor,
+                                              cols_sensors=cols_sensors)
         
-        # Processa teste (train=False usa o scaler salvo)
-        df_test_raw, _ = launcher.process_data(
-           data_path=test_path,
-           cols_to_drop=cols_to_drop,
-           cols_non_sensor=cols_non_sensor,
-           scaler_path=os.path.join(self.params['data_path'], self.params['extra_params']["scaler_name"]),
-           piecewise_lin_ref=self.params["extra_params"]["piecewise_lin_ref"]
-        )
-        
+        df_test_raw = self._norm_target_test(df_test_raw)
+
         X_test_np, y_test_np = launcher.input_generator(
             df_test_raw,
-            cols_non_sensor=cols_non_sensor,
+            cols_sensors=cols_sensors,
             sequence_length=self.params["extra_params"]["sequence_length"],
             stride=self.params["extra_params"]["stride"],
             window_length=window_length
@@ -453,6 +469,51 @@ class FemtoMultiHeadDataLoader(BaseDataLoader):
                   return int(parts[1])
         return 5 # Default window length if no conv layer is found
 
+    def _split_train_val_bearing(self,
+                                 df_train_raw,
+                                 launcher: FemtoNetworkLauncher,
+                                 cols_sensors,
+                                 window_length):
+      val_bearing_ids = self.params["extra_params"]["validation_bearing_id"]
+      mask_val = df_train_raw['bearing_id'].isin(val_bearing_ids)
+          
+      df_val = df_train_raw[mask_val].copy()
+      df_train = df_train_raw[~mask_val].copy()
+       
+      X_train, y_train = launcher.input_generator(
+          df_train,
+          cols_sensors=cols_sensors,
+          sequence_length=self.params["extra_params"]["sequence_length"],
+          stride=self.params["extra_params"]["stride"],
+          window_length=window_length
+      )
+
+      X_val, y_val = launcher.input_generator(
+              df_val,
+              cols_sensors=cols_sensors,
+              sequence_length=self.params["extra_params"]["sequence_length"],
+              stride=self.params["extra_params"]["stride"],
+              window_length=window_length
+      )
+
+      return X_train, X_val, y_train, y_val
+
+    def _split_train_val_shuffle(self, X_full, y_full):
+      num_samples = y_full.shape[0]
+      indices = np.arange(num_samples)
+
+      # 2. Faz o split 70/30 nos ÍNDICES (shuffle=True é o padrão, mas deixei explícito)
+      train_idx, val_idx = train_test_split(indices, test_size=0.3, shuffle=True)
+
+      # 3. Aplica os índices aos dados
+      # Como X_full é uma lista de arrays (um por sensor/head), precisamos iterar sobre ela
+      X_train = [x[train_idx] for x in X_full]
+      X_val   = [x[val_idx]   for x in X_full]
+
+      y_train = y_full[train_idx]
+      y_val   = y_full[val_idx]
+      return X_train, X_val, y_train, y_val
+
     def __split_train_val(self,
                             inputs: List[np.ndarray],
                             targets: np.ndarray, val_ratio=0.1):
@@ -494,6 +555,116 @@ class FemtoMultiHeadDataLoader(BaseDataLoader):
         val_targets = np.concatenate(val_targets_list, axis=0)
 
         return train_inputs, val_inputs, train_targets, val_targets
+
+    def _filter_benchmark_windows(self, df_raw: pd.DataFrame, sequence_length: int) -> pd.DataFrame:
+        """
+        Filtra o DataFrame para manter APENAS os dados necessários para criar
+        a última janela de cada rolamento (terminando exatamente no RPT).
+        """
+        filtered_chunks = []
+        
+        # Garante que bearing_id é string para bater com as chaves do dicionário
+        df_raw['bearing_id'] = df_raw['bearing_id'].astype(str)
+        
+        for bearing_id, rpt_idx in femto_const.RPT_INDICES.items():
+            # Seleciona dados do rolamento atual
+            # Nota: bearing_id no df pode ser "1_1" ou "11", ajuste conforme seu dado
+            bearing_mask = df_raw['bearing_id'] == bearing_id
+            
+            if not bearing_mask.any():
+                continue
+                
+            # Define o intervalo exato da janela: [RPT - seq_len + 1, RPT]
+            # Ex: Se seq=30 e RPT=1801, pegamos do 1772 ao 1801.
+            start_idx = rpt_idx - sequence_length + 1
+            end_idx = rpt_idx
+            
+            # Filtra pelos índices
+            idx_mask = (df_raw['sample_idx'] >= start_idx) & (df_raw['sample_idx'] <= end_idx)
+            
+            chunk = df_raw[bearing_mask & idx_mask].copy()
+            
+            # Validação: Só adiciona se tivermos a janela completa
+            if len(chunk) >= sequence_length:
+                filtered_chunks.append(chunk)
+            else:
+                print(f"AVISO: Bearing {bearing_id} tem dados insuficientes para janela de tamanho {sequence_length} no RPT {rpt_idx}.")
+
+        if not filtered_chunks:
+            raise ValueError("Nenhum dado de teste restou após a filtragem de Benchmark!")
+            
+        return pd.concat(filtered_chunks, ignore_index=True)
+
+    def _process_data_test(self,
+                           data_path: str,
+                           sequence_length: int,
+                           cols_to_drop: List[str],
+                           cols_non_sensor: List[str],
+                           cols_sensors: List[str]):
+       # 1. Carregar DataFrame Bruto (ainda tem sample_idx)
+        df_test_full = FemtoPrep().load_data(data_path)
+        
+        # 2. FILTRAGEM DE BENCHMARK
+        # Cortamos o DF para ter apenas os sequence_length arquivos antes do RPT de cada bearing
+        df_test_bench = self._filter_benchmark_windows(df_test_full, sequence_length)
+        
+        # 3. Processamento (Limpeza e Normalização)
+        # Aplicamos o mesmo processamento do treino nos dados recortados
+        df_test_clean = FemtoPrep().df_preparation(
+            df_test_bench, 
+            cols_to_drop, 
+            piecewise_lin_ref=self.params["extra_params"]["piecewise_lin_ref"]
+        )
+        
+        # Normalização (Usando o scaler salvo)
+        df_test_norm, _ = FemtoPrep().df_preprocessing(
+            df_test_clean, 
+            cols_non_sensor, 
+            scaler_path=os.path.join(self.params['data_path'],
+                                     self.params['extra_params']["scaler_name"]),
+            cols_sensors=cols_sensors,
+            train=False
+        )
+
+        return df_test_norm
+
+    def save_target_scaler(self, df_data):
+
+      if self.params['target_normalization']["name"] is not None:
+        scaler_config = self.params['target_normalization']
+        full_class_path = scaler_config["name"]  # Ex: "sklearn.preprocessing.MinMaxScaler"
+
+        # 1. Separa o caminho do módulo da classe
+        # "sklearn.preprocessing" | "MinMaxScaler"
+        module_name, class_name = full_class_path.rsplit(".", 1)
+
+        # 2. Importação Dinâmica
+        try:
+            module = importlib.import_module(module_name)
+            scaler_cls = getattr(module, class_name)
+        except (ImportError, AttributeError) as e:
+            raise ImportError(f"Não foi possível importar {class_name} de {module_name}. Erro: {e}")
+
+        params_dict = scaler_config.get("params") or {}
+        scaler = scaler_cls(**params_dict)
+
+        df_data["RUL"] = \
+          scaler.fit_transform(df_data["RUL"].values.reshape(-1, 1)).flatten()
+
+        save_path = os.path.join(self.params['data_path'], scaler_config["path"])
+        joblib.dump(scaler, save_path)
+        print(f"Target Scaler ({class_name}) salvo com sucesso em: {save_path}")
+      return df_data
+
+    def _norm_target_test(self, df_test: pd.DataFrame):
+      if self.params['target_normalization']["name"] is not None:
+        scaler_config = self.params['target_normalization']
+        scaler_path = os.path.join(self.params['data_path'], scaler_config["path"])
+        target_scaler = joblib.load(scaler_path)
+        df_test["RUL"] = \
+          target_scaler.transform(df_test["RUL"].values.reshape(-1, 1)).flatten()
+      return df_test
+
 
 class GenericDataLoader:
   """A generic data loader for PyTorch, supporting various datasets and data augmentation."""

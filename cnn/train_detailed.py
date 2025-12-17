@@ -8,6 +8,7 @@
 import os
 import time
 import numpy as np
+import joblib
 import torch
 from medmnist import INFO, Evaluator
 import torch.nn as nn
@@ -272,13 +273,14 @@ def reset_and_load_best_model(params, best_model_path):
     # Create the model
     if "dataset_type" in params and params["dataset_type"] == "multihead":
         # If multi-head architecture is enabled, create a multi-head network
+        lstm_multiplier = params['extra_params']['lstm_multiplier']
         best_model = model.MultiHeadNetworkGraphNew(num_classes=params['num_classes'], 
                                                 network_config=params['network_config'], 
                                                 network_gap=params['network_gap'],
                                                 in_channels=1,
                                                 num_sensors=params['num_sensors'],
-                                                num_lstm_cells_1=int(params['decoded_params']['lstm_1']*20),
-                                                num_lstm_cells_2=int(params['decoded_params']['lstm_2']*20),
+                                                num_lstm_cells_1=int(params['decoded_params']['lstm_1']*lstm_multiplier),
+                                                num_lstm_cells_2=int(params['decoded_params']['lstm_2']*lstm_multiplier),
                                                 shared_head_architecture=params['extra_params']['shared_head_architecture'])
 
         single_sensor_shape = params['input_shape'][0]
@@ -304,7 +306,7 @@ def reset_and_load_best_model(params, best_model_path):
 
     return best_model
 
-def train_epoch(model, criterion, optimizer, data_loader, params):
+def train_epoch(model, criterion, optimizer, data_loader, params, target_scaler=None):
     model.train()
     train_loss = 0.0
     device = torch.device(params['device'])
@@ -327,13 +329,26 @@ def train_epoch(model, criterion, optimizer, data_loader, params):
         loss.backward()       
         optimizer.step()
         train_loss += loss.item()
-        metric_tracker.update(y_logits, labels)
-        
+
+        # 2. Desnormalização
+        if params['task'] == 'regression' and target_scaler is not None:
+            # Converte para numpy e garante shape (N, 1) exigido pelo sklearn
+            y_pred_np = y_logits.detach().cpu().numpy().reshape(-1, 1)
+            labels_np = labels.detach().cpu().numpy().reshape(-1, 1)
+
+            y_pred_real = target_scaler.inverse_transform(y_pred_np)
+            labels_real = target_scaler.inverse_transform(labels_np)
+
+            metric_tracker.update(torch.tensor(y_pred_real, dtype=torch.float32).to(device), 
+                                 torch.tensor(labels_real, dtype=torch.float32).to(device))
+        else:
+            metric_tracker.update(y_logits, labels)
+
     avg_metric = metric_tracker.result()
     train_loss /= len(data_loader)
     return train_loss, avg_metric
 
-def evaluate(model, criterion, data_loader, params, test=False):
+def evaluate(model, criterion, data_loader, params, target_scaler=None, test=False):
     model.eval()
     eval_loss = 0.0
     device = torch.device(params['device'])
@@ -354,7 +369,20 @@ def evaluate(model, criterion, data_loader, params, test=False):
                 
             loss = criterion(y_logits, labels)
             eval_loss += loss.item()
-            metric_tracker.update(y_logits, labels)
+
+            # 2. Desnormalização
+            if params['task'] == 'regression' and target_scaler is not None:
+                # Converte para numpy e garante shape (N, 1) exigido pelo sklearn
+                y_pred_np = y_logits.cpu().numpy().reshape(-1, 1)
+                labels_np = labels.cpu().numpy().reshape(-1, 1)
+
+                y_pred_real = target_scaler.inverse_transform(y_pred_np)
+                labels_real = target_scaler.inverse_transform(labels_np)
+
+                metric_tracker.update(torch.tensor(y_pred_real, dtype=torch.float32).to(device), 
+                                 torch.tensor(labels_real, dtype=torch.float32).to(device))
+            else:
+                metric_tracker.update(y_logits, labels)
 
     avg_metric = metric_tracker.result()
     eval_loss /= len(data_loader)
@@ -374,7 +402,8 @@ def train(model: torch.nn.Module,
         train_loader: torch.utils.data.DataLoader,
         val_loader: torch.utils.data.DataLoader,
         test_loader: torch.utils.data.DataLoader,
-        params: Dict[str, Union[int, float, str]]) -> Dict[str, Union[List[float], float]]:
+        params: Dict[str, Union[int, float, str]],
+        target_scaler = None) -> Dict[str, Union[List[float], float]]:
     """
     Retrain a convolutional neural network model.
 
@@ -448,15 +477,15 @@ def train(model: torch.nn.Module,
 
     #for epoch in tqdm(range(1, max_epochs + 1), desc="Retrain Scheme"):
     for epoch in range(1, max_epochs + 1):
-        train_loss, train_metric = train_epoch(model, criterion, optimizer, train_loader, params)
+        train_loss, train_metric = train_epoch(model, criterion, optimizer, train_loader, params, target_scaler)
         training_losses.append(train_loss)
         training_metrics.append(train_metric)
         
-        validation_loss, val_metric = evaluate(model, criterion, val_loader, params)
+        validation_loss, val_metric = evaluate(model, criterion, val_loader, params, target_scaler)
         validation_losses.append(validation_loss)
         validation_metrics.append(val_metric)
 
-        test_loss_temp, test_metric_temp = evaluate(model, criterion, test_loader, params, test=True)
+        test_loss_temp, test_metric_temp = evaluate(model, criterion, test_loader, params, target_scaler, test=True)
         print("Test Loss", test_loss_temp)
         print("Test Metric", test_metric_temp)
         
@@ -484,10 +513,10 @@ def train(model: torch.nn.Module,
     best_model_loaded = reset_and_load_best_model(params, best_model_path)
 
     if params['task'] == 'regression':
-        test_loss, test_metric = evaluate(best_model_loaded, criterion, test_loader, params, test=True)
+        test_loss, test_metric = evaluate(best_model_loaded, criterion, test_loader, params, target_scaler, test=True)
         auc_value, acc_med, confusion_matrix = None, None, None
     else:
-        test_loss, test_metric, auc_value, acc_med, confusion_matrix = evaluate(best_model_loaded, criterion, test_loader, params, test=True)
+        test_loss, test_metric, auc_value, acc_med, confusion_matrix = evaluate(best_model_loaded, criterion, test_loader, params, target_scaler, test=True)
     
     LOGGER.info(f"Experiment: {params['experiment_path']} - Test loss: {test_loss:.2f} - Test {metric_name}: {test_metric:.2f}%")
     #print(f"Test loss: {test_loss} - Test accuracy: {test_accuracy}%")
@@ -590,13 +619,14 @@ def train_and_eval(params: Dict[str, Any],
     # Create the model
     if "dataset_type" in params and params["dataset_type"] == "multihead":
         # If multi-head architecture is enabled, create a multi-head network
+        lstm_multiplier = params['extra_params']['lstm_multiplier']
         model_net = model.MultiHeadNetworkGraphNew(num_classes=dataset_info['num_classes'], 
                                                 network_config=params['network_config'], 
                                                 network_gap=params['network_gap'],
                                                 in_channels=1,
                                                 num_sensors=num_sensors_data,
-                                                num_lstm_cells_1=int(best_individual_info['decoded_params']['lstm_1']*20),
-                                                num_lstm_cells_2=int(best_individual_info['decoded_params']['lstm_2']*20),
+                                                num_lstm_cells_1=int(best_individual_info['decoded_params']['lstm_1']*lstm_multiplier),
+                                                num_lstm_cells_2=int(best_individual_info['decoded_params']['lstm_2']*lstm_multiplier),
                                                 shared_head_architecture=params['extra_params']['shared_head_architecture'])
 
         single_sensor_shape = [params['batch_size']] + dataset_info['shape']
@@ -648,11 +678,25 @@ def train_and_eval(params: Dict[str, Any],
 
     optimizer = optimizer_cls(model_net.parameters(), **opt_config.get("params", {}))
 
+    target_scaler = None
+    if ('target_normalization' in params) and (params['target_normalization']["name"] is not None):
+        scaler_path = os.path.join(params['data_path'], params['target_normalization']['path'])
+        if os.path.exists(scaler_path):
+            target_scaler = joblib.load(scaler_path)
+            LOGGER.info(f"Target scaler loaded for denormalization from {scaler_path}")
+
     # Training time start counting here.
     params['t0'] = time.time()
     
     try:
-        results_dict = train(model_net, criterion, optimizer, train_loader, val_loader, test_loader, params)
+        results_dict = train(model_net,
+                             criterion,
+                             optimizer,
+                             train_loader,
+                             val_loader,
+                             test_loader,
+                             params,
+                             target_scaler)
     except RuntimeError as e:
         if "out of memory" in str(e):
             LOGGER.error(f"Out of memory error: {e}")

@@ -1,18 +1,25 @@
 # Configuration file
-# Semelhante ao V0 mas com 50 geracoes, update_quantum_gen 3, update_quantum_rate 0.3
-# max_update 0.15, max_epochs 30
+# Esse arquivo é para testar a evolucao apos a refatoracao do codigo do input e do config.txt
+# ele ja tem as probabilidades iguais e blocos de convolucao semelhante ao trabalho relacionado
+# teoricamente espero bons resultados
+# coloquei allow_duplicate_architectures como True pois ainda nao implementei deteccao de
+# net e parametros em conjunto que sao duplicados
 
+# Esse config e para executar com a correcao do calculo da metrica RMSE que estava por batch
+# Agora o calculo da metrica esta por amostra e não batch
+# v0 do femto
+# Arquivo somente para teste para verificar se o algoritmo está correta
 
 QNAS:
     crossover_rate: 0.5
-    max_generations: 50
+    max_generations: 20
     max_num_nodes: 6
     num_quantum_ind: 4
     penalize_number: 3
     repetition: 5
     replace_method: best
-    update_quantum_gen: 3
-    update_quantum_rate: 0.3
+    update_quantum_gen: 5
+    update_quantum_rate: 0.1
     save_data_freq: 10
     crossover_frequency: 5
     pop_crossover_rate: 0.25
@@ -20,7 +27,7 @@ QNAS:
     patience: 10
     early_stopping: False
     en_pop_crossover: False
-    max_update: 0.15
+    max_update: 0.05
 
     params_type:
         decay: float
@@ -57,10 +64,10 @@ QNAS:
     }
 
 train:
-    batch_size: 400
-    eval_batch_size: 400
-    max_epochs: 30
-    epochs_to_eval: 29
+    batch_size: 32
+    eval_batch_size: 32
+    max_epochs: 100
+    epochs_to_eval: 99
     optimizer:
         name: RMSprop #RMSprop, Adam, AdamW, SGD
         params:
@@ -86,9 +93,9 @@ train:
     dataset: femto_multihead_train
     file_extension: parquet
     exp_path_base: exp_femto
-    exp: exp_v1
+    exp: exp_v100
     log_level: INFO
-    repeat: 3 # repetions for search
+    repeat: 1 # repetions for search
     dataloader_class: FemtoMultiHeadDataLoader
 
     data_augmentation: False
@@ -107,7 +114,7 @@ train:
     # Tensorflow
     save_checkpoints_epochs: 5
     save_summary_epochs: 0.25
-    threads: 20
+    threads: 1
 
     # penalization parameters - scalarized fitness
     max_params: 114090 # 1.9M
@@ -118,9 +125,9 @@ train:
     network_gap: False
 
     # Params for retrain:
-    batch_size_retrain: 400
-    eval_batch_size_retrain: 400
-    max_epochs_retrain: 20
+    batch_size_retrain: 32
+    eval_batch_size_retrain: 32
+    max_epochs_retrain: 100
     num_repetitions_retrain: 5 # repetions for retrain
 
     # problem-specific parameters
@@ -138,3 +145,4 @@ train:
         piecewise_lin_ref: 15000
         scaler_name: femto_scaler.save
         lstm_multiplier: 20
+        validation_bearing_id: [12, 22, 32]

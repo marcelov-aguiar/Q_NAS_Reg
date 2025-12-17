@@ -105,6 +105,10 @@ train:
     num_classes: 1
     task: regression
     dataset_type: multihead
+    target_normalization:
+        name: sklearn.preprocessing.MinMaxScaler
+        path: femto_target_scaler.save
+        params:
 
     # Tensorflow
     save_checkpoints_epochs: 5
@@ -139,4 +143,4 @@ train:
         val_split: 0.1
         piecewise_lin_ref: 15000
         scaler_name: femto_scaler.save
-        RUL_FD_test_file: RUL_FD001.txt
+        lstm_multiplier: 20

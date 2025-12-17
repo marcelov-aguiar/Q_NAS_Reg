@@ -13,6 +13,7 @@ Documentation:
 import os
 import time
 import numpy as np
+import joblib
 import copy
 import torch
 import torch.nn as nn
@@ -151,7 +152,7 @@ def init_weights(module):
                 param.data[hidden_size:2*hidden_size] = 1.0
 
 
-def train_epoch(model, criterion, optimizer, data_loader, params, scaler):
+def train_epoch(model, criterion, optimizer, data_loader, params, scaler, target_scaler=None):
     model.train()
     train_loss = 0.0
     device = torch.device(params['device'])
@@ -176,13 +177,26 @@ def train_epoch(model, criterion, optimizer, data_loader, params, scaler):
         scaler.step(optimizer)
         scaler.update()
         train_loss += loss.item()
-        metric_tracker.update(y_logits, labels)
+
+        # 2. Desnormalização
+        if params['task'] == 'regression' and target_scaler is not None:
+            # Converte para numpy e garante shape (N, 1) exigido pelo sklearn
+            y_pred_np = y_logits.detach().cpu().numpy().reshape(-1, 1)
+            labels_np = labels.detach().cpu().numpy().reshape(-1, 1)
+
+            y_pred_real = target_scaler.inverse_transform(y_pred_np)
+            labels_real = target_scaler.inverse_transform(labels_np)
+
+            metric_tracker.update(torch.tensor(y_pred_real, dtype=torch.float32).to(device), 
+                                 torch.tensor(labels_real, dtype=torch.float32).to(device))
+        else:
+            metric_tracker.update(y_logits, labels)
         
     avg_loss = train_loss / len(data_loader)
     avg_metric = metric_tracker.result()
     return avg_loss, avg_metric
 
-def evaluate(model, criterion, data_loader, params):
+def evaluate(model, criterion, data_loader, params, target_scaler=None):
     model.eval()
     validation_loss = 0.0
     device = torch.device(params['device'])
@@ -203,7 +217,20 @@ def evaluate(model, criterion, data_loader, params):
                     labels = labels.squeeze().long() # medmnist
                 loss = criterion(y_logits, labels)
             validation_loss += loss.item()
-            metric_tracker.update(y_logits, labels)
+
+            # 2. Desnormalização
+            if params['task'] == 'regression' and target_scaler is not None:
+                # Converte para numpy e garante shape (N, 1) exigido pelo sklearn
+                y_pred_np = y_logits.cpu().numpy().reshape(-1, 1)
+                labels_np = labels.cpu().numpy().reshape(-1, 1)
+
+                y_pred_real = target_scaler.inverse_transform(y_pred_np)
+                labels_real = target_scaler.inverse_transform(labels_np)
+
+                metric_tracker.update(torch.tensor(y_pred_real, dtype=torch.float32).to(device), 
+                                 torch.tensor(labels_real, dtype=torch.float32).to(device))
+            else:
+                metric_tracker.update(y_logits, labels)
 
     avg_metric = metric_tracker.result()
     validation_loss /= len(data_loader)
@@ -215,7 +242,8 @@ def train(model:torch.nn.Module,
           optimizer:torch.optim.Optimizer, 
           train_loader:torch.utils.data.DataLoader,
           val_loader:torch.utils.data.DataLoader, 
-          params:Dict, debug=False) -> Dict:
+          params:Dict, debug=False,
+          target_scaler = None) -> Dict:
     """
     Train a neural network model.
 
@@ -289,7 +317,7 @@ def train(model:torch.nn.Module,
     
     LOGGER.info(f"Training {params['task']} model with {metric_name} metric")
     for epoch in range(1, max_epochs + 1):
-        train_loss, train_metric = train_epoch(model, criterion, optimizer, train_loader, params,scaler)
+        train_loss, train_metric = train_epoch(model, criterion, optimizer, train_loader, params, scaler, target_scaler)
         training_losses.append(train_loss)
         training_metrics.append(train_metric)
 
@@ -300,7 +328,7 @@ def train(model:torch.nn.Module,
         validation_loss = None
         val_metric = None
         if epoch > start_eval:
-            validation_loss, val_metric = evaluate(model, criterion, val_loader, params)
+            validation_loss, val_metric = evaluate(model, criterion, val_loader, params, target_scaler)
             validation_losses.append(validation_loss)
             validation_metrics.append(val_metric)
 
@@ -474,13 +502,14 @@ def fitness_calculation(id_num:str,
     # Create the model
     if "dataset_type" in params and params["dataset_type"] == "multihead":
         # If multi-head architecture is enabled, create a multi-head network
+        lstm_multiplier = params['extra_params']['lstm_multiplier']
         model_net = model.MultiHeadNetworkGraphNew(num_classes=dataset_info['num_classes'], 
                                                 network_config=params['network_config'], 
                                                 network_gap=params['network_gap'],
                                                 in_channels=params['extra_params']['in_channels'],
                                                 num_sensors=num_sensors_data,
-                                                num_lstm_cells_1=int(decoded_params['lstm_1']*20),
-                                                num_lstm_cells_2=int(decoded_params['lstm_2']*20),
+                                                num_lstm_cells_1=int(decoded_params['lstm_1']*lstm_multiplier),
+                                                num_lstm_cells_2=int(decoded_params['lstm_2']*lstm_multiplier),
                                                 shared_head_architecture=params['extra_params']['shared_head_architecture'])
 
         single_sensor_shape = [params['batch_size']] + dataset_info['shape']
@@ -540,9 +569,23 @@ def fitness_calculation(id_num:str,
     else:
         raise ValueError(f"Unknown task type: {params['task']}")
 
+    target_scaler = None
+    if ('target_normalization' in params) and (params['target_normalization']["name"] is not None):
+        scaler_path = os.path.join(params['data_path'], params['target_normalization']['path'])
+        if os.path.exists(scaler_path):
+            target_scaler = joblib.load(scaler_path)
+            LOGGER.info(f"Target scaler loaded for denormalization from {scaler_path}")
+
     # Train the model in fitness scheme
     try:
-        results_dict = train(model_net, criterion, optimizer, train_loader, val_loader,params,debug)
+        results_dict = train(model_net,
+                             criterion,
+                             optimizer,
+                             train_loader,
+                             val_loader,
+                             params,
+                             debug,
+                             target_scaler)
         if debug:
             result = results_dict
             return result
