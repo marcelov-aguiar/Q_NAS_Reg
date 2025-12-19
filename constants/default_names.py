@@ -20,7 +20,8 @@ BATCH_SIZE = "batch_size"
 BATCH_SIZE_RETRAIN = "batch_size_retrain"
 CRITERION = "criterion"
 DATA_AUGMENTATION = "data_augmentation"
-
+NUM_SENSORS = "num_sensors"
+SHARED_HEAD_ARCHITECTURE = "shared_head_architecture" #se True a mesma CNN é usada em todos os head, se False CNN diferente em cada head
 
 DATALOADER_CLASS = "dataloader_class"
 DATASET = "dataset"

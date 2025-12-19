@@ -137,3 +137,4 @@ train:
         piecewise_lin_ref: 15000
         scaler_name: femto_scaler.save
         lstm_multiplier: 20
+        save_predictions_to_txt: True

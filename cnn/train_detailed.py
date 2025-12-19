@@ -16,7 +16,7 @@ from tqdm.notebook import tqdm
 from typing import Dict, List, Union, Any
 from sklearn.metrics import confusion_matrix
 from cnn import model, input, metrics
-from util import create_info_file, init_log, load_yaml
+from util import create_info_file, init_log, load_yaml, save_results_file
 from torch.optim.lr_scheduler import ReduceLROnPlateau, ExponentialLR, CosineAnnealingLR, MultiStepLR
 from torch.optim.lr_scheduler import LambdaLR
 import torch.nn.init as init
@@ -203,6 +203,50 @@ def init_weights(module):
                 # Set forget gate bias to 1 (assuming default PyTorch LSTM layout)
                 hidden_size = param.shape[0] // 4
                 param.data[hidden_size:2*hidden_size] = 1.0
+
+
+def save_predictions_to_txt(model, criterion, data_loader, params, target_scaler=None, test=False):
+    model.eval()
+    eval_loss = 0.0
+    device = torch.device(params['device'])
+
+    all_preds = []
+    all_targets = []
+
+    with torch.no_grad():
+        for inputs, labels in data_loader:
+            if "dataset_type" in params and params["dataset_type"] == "multihead":
+                inputs = [inp.to(device) for inp in inputs]
+                labels = labels.to(device)
+            else:
+                inputs, labels = inputs.to(device), labels.to(device)
+            y_logits = model(inputs)
+            
+            if params['task'] == 'multi-class':
+                labels = labels.squeeze().long() # medmnist
+                
+            loss = criterion(y_logits, labels)
+            eval_loss += loss.item()
+
+            # 2. Desnormalização
+            if params['task'] == 'regression' and target_scaler is not None:
+                # Converte para numpy e garante shape (N, 1) exigido pelo sklearn
+                y_pred_np = y_logits.cpu().numpy().reshape(-1, 1)
+                labels_np = labels.cpu().numpy().reshape(-1, 1)
+
+                y_pred_real = target_scaler.inverse_transform(y_pred_np)
+                labels_real = target_scaler.inverse_transform(labels_np)
+
+                all_preds.append(y_pred_real)
+                all_targets.append(labels_real)
+
+    final_preds = np.concatenate(all_preds, axis=0).flatten()
+    final_targets = np.concatenate(all_targets, axis=0).flatten()
+    data_dict = {
+        'y_pred': final_preds.tolist(),
+        'target': final_targets.tolist()
+    }
+    save_results_file(params['model_path'], data_dict, 'predictions_to_txt.txt')
 
 
 def release_gpu_memory(gpu_name='cuda:0'):
@@ -522,7 +566,10 @@ def train(model: torch.nn.Module,
     #print(f"Test loss: {test_loss} - Test accuracy: {test_accuracy}%")
             
     params['t1'] = time.time()
-    
+
+    if 'save_predictions_to_txt' in params['extra_params'] and params['extra_params']['save_predictions_to_txt']:
+        save_predictions_to_txt(best_model_loaded, criterion, test_loader, params, target_scaler, test=True)
+
     create_info_file(params['model_path'], params, 'retraining_params.txt')
     
     model_metrics = metrics.ModelMetrics(best_model_loaded, device=params['device'])

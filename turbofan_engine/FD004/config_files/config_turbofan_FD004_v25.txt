@@ -7,6 +7,7 @@
 # Esse config e para executar com a correcao do calculo da metrica RMSE que estava por batch
 # Agora o calculo da metrica esta por amostra e não batch
 # Igual ao v2, mas com TFScheduler
+# Igual ao v13 mas com TFSchuduler no treinamento
 
 
 QNAS:

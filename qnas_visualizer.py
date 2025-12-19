@@ -244,3 +244,130 @@ class QNASVisualizer:
 			plt.show()
 
 		return fig
+
+	@staticmethod
+	def aggregate_nodes_by_head(
+		probs: np.ndarray,
+		num_heads: int,
+		nodes_per_head: int,
+		mode: str = "mean"
+	) -> np.ndarray:
+		"""
+		Aggregates node probabilities by head.
+
+		Args:
+			probs (np.ndarray): shape (num_nodes, num_functions)
+			num_heads (int): number of heads (e.g. 14)
+			nodes_per_head (int): number of nodes per head (e.g. 6)
+			mode (str): aggregation mode ("mean" or "max")
+
+		Returns:
+			np.ndarray: shape (num_heads, num_functions)
+		"""
+		aggregated = []
+
+		for h in range(num_heads):
+			start = h * nodes_per_head
+			end = start + nodes_per_head
+			head_probs = probs[start:end]
+
+			if mode == "mean":
+				aggregated.append(head_probs.mean(axis=0))
+			elif mode == "max":
+				aggregated.append(head_probs.max(axis=0))
+			else:
+				raise ValueError(f"Unsupported aggregation mode: {mode}")
+
+		return np.vstack(aggregated)
+
+	@staticmethod
+	def plot_individual_head_aggregation(
+		data,
+		generations,
+		individual_idx,
+		labels,
+		palette=None,
+		figsize=(20, 6),
+		bar_width=0.8,
+		show=True,
+		num_heads=14,
+		nodes_per_head=6,
+		aggregate_by_head=True
+	):
+		"""
+		Plots stacked bar charts for given generations.
+		If aggregate_by_head=True, probabilities are averaged per head.
+
+		Args:
+			data (dict): data[gen]['net_probs'] → (num_individuals, num_nodes, num_functions)
+			generations (list[int]): generations to plot
+			individual_idx (int): individual index
+			labels (list[str]): function names
+			palette (dict): label → color
+			figsize (tuple): figure size
+			bar_width (float): bar width
+			show (bool): show plot
+			num_heads (int): number of heads
+			nodes_per_head (int): nodes per head
+			aggregate_by_head (bool): whether to aggregate nodes per head
+	    """
+		n_gens = len(generations)
+		fig, axes = plt.subplots(1, n_gens, figsize=figsize, sharey=True)
+
+		if n_gens == 1:
+			axes = [axes]
+
+		colors = [palette[label] for label in labels] if palette else None
+
+		for ax, gen in zip(axes, generations):
+			probs = data[gen]["net_probs"][individual_idx]  # (num_nodes, num_functions)
+
+			if aggregate_by_head:
+				probs = QNASVisualizer.aggregate_nodes_by_head(
+					probs,
+					num_heads=num_heads,
+					nodes_per_head=nodes_per_head,
+					mode="mean"
+	            )
+				x_labels = [f"H{h}" for h in range(num_heads)]
+				xlabel = "Heads"
+			else:
+				x_labels = np.arange(probs.shape[0])
+				xlabel = "Network nodes"
+
+			df = pd.DataFrame(probs, columns=labels)
+
+			df.plot(
+				kind="bar",
+				stacked=True,
+				ax=ax,
+				width=bar_width,
+				edgecolor="white",
+				linewidth=0.5,
+				color=colors,
+				legend=False
+			)
+
+			ax.set_title(
+				f"Individual {individual_idx} – Gen {gen} (Head Average)",
+				fontsize=11,
+				fontweight="bold"
+			)
+			ax.set_xticks(np.arange(len(x_labels)))
+			ax.set_xticklabels(x_labels, rotation=0)
+			ax.set_xlabel(xlabel, fontsize=10)
+			ax.set_ylabel("Probability", fontsize=10)
+			ax.grid(False)
+
+		axes[-1].legend(
+			labels,
+			bbox_to_anchor=(1.02, 1),
+			loc="upper left",
+			title="Functions"
+		)
+
+		plt.tight_layout()
+		if show:
+			plt.show()
+
+		return fig

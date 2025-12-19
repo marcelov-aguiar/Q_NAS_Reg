@@ -1,7 +1,7 @@
 dataset: femto_multihead_train
 num_classes: 1
 num_sensors: 12
-seed: 1765939113
+seed: 1766020589
 shape:
 - null
 - null
