@@ -31,7 +31,7 @@ if __name__ == "__main__":
         config_files = sorted(config_files, key=mlflow_tracking.extract_version)
         config_files = [
             #"config_turbofan_FD004_v26.txt",
-		    "config_turbofan_FD004_v26.txt"
+		    "config_turbofan_FD004_v27.txt"
 		    #"config_turbofan_FD002_v25.txt",
 		    #"config_turbofan_FD002_v26.txt",
 		    #"config_turbofan_FD003_v24.txt"

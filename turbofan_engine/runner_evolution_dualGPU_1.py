@@ -16,11 +16,8 @@ if __name__ == "__main__":
 	# config_files = [f for f in os.listdir(config_dir) if f.endswith(".txt")]
 	# TODO: Colocar para rodar na dualGPU, ainda está com a versão antiga
 	config_files = [
-		"FD004/config_files/config_turbofan_FD004_v26.txt",
-		"FD004/config_files/config_turbofan_FD004_v27.txt",
-		"FD002/config_files/config_turbofan_FD002_v25.txt"
-		"FD002/config_files/config_turbofan_FD002_v26.txt",
-		"FD003/config_files/config_turbofan_FD003_v24.txt"
+		"FD004/config_files/config_turbofan_FD004_v28.txt",
+		"FD004/config_files/config_turbofan_FD004_v29.txt"
 	]
 	for cfg in config_files:
 		config_path = os.path.join(base_path, cfg)
