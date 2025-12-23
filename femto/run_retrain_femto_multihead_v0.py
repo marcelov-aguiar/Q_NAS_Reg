@@ -78,7 +78,7 @@ def main(**args):
 
 if __name__ == '__main__':
 
-    CONFIG_NAME = "config_femto_v100.txt"
+    CONFIG_NAME = "config_femto_v5.txt"
 
     base_path = os.path.dirname(os.path.abspath(__file__))
     config_path = os.path.join(base_path, 'config_files', CONFIG_NAME)

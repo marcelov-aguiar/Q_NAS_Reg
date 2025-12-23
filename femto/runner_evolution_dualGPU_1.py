@@ -5,7 +5,7 @@ Chama o run_evolution.py
 import subprocess
 import os
 from util import load_yaml
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 if __name__ == "__main__":
 	base_path = os.path.dirname(os.path.abspath(__file__))
@@ -16,11 +16,12 @@ if __name__ == "__main__":
 	# config_files = [f for f in os.listdir(config_dir) if f.endswith(".txt")]
 	# TODO: Colocar para rodar na dualGPU, ainda está com a versão antiga
 	config_files = [
-		"config_files/config_femto_v0.txt",
+		#"config_files/config_femto_v0.txt",
 		#"config_files/config_femto_v1.txt",
-		"config_files/config_femto_v2.txt",
-		"config_files/config_femto_v3.txt",
-		"config_files/config_femto_v4.txt"
+		#"config_files/config_femto_v2.txt",
+		#"config_files/config_femto_v3.txt",
+		"config_files/config_femto_v8.txt",
+		"config_files/config_femto_v7.txt"
 	]
 	for cfg in config_files:
 		config_path = os.path.join(base_path, cfg)

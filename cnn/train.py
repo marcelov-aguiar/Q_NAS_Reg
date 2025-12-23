@@ -571,10 +571,11 @@ def fitness_calculation(id_num:str,
 
     target_scaler = None
     if ('target_normalization' in params) and (params['target_normalization']["name"] is not None):
-        scaler_path = os.path.join(params['data_path'], params['target_normalization']['path'])
-        if os.path.exists(scaler_path):
-            target_scaler = joblib.load(scaler_path)
-            LOGGER.info(f"Target scaler loaded for denormalization from {scaler_path}")
+        target_scaler_name = params['target_normalization']['path'].replace('.save', '_'+params['exp']+'.save')
+        target_scaler_path = os.path.join(params['data_path'], 'scaler', target_scaler_name)
+        if os.path.exists(target_scaler_path):
+            target_scaler = joblib.load(target_scaler_path)
+            LOGGER.info(f"Target scaler loaded for denormalization from {target_scaler_path}")
 
     # Train the model in fitness scheme
     try:

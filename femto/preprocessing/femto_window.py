@@ -36,25 +36,25 @@ class FemtoWindow(object):
         seq_gen = (list(FemtoWindow.gen_sequence(df[df['bearing_id'] == id], sequence_length, sequence_cols))
                    for id in df['bearing_id'].unique())
 
-        clean_seq_gen = [x for x in seq_gen if len(x) > 0]
-        
-        if not clean_seq_gen:
-             # Retorna array vazio com shape correto para evitar erro de concat
-             return np.empty((0, sequence_length, len(sequence_cols)), dtype=np.float32)
+        # clean_seq_gen = [x for x in seq_gen if len(x) > 0]
+        # 
+        # if not clean_seq_gen:
+        #      # Retorna array vazio com shape correto para evitar erro de concat
+        #      return np.empty((0, sequence_length, len(sequence_cols)), dtype=np.float32)
              
-        seq_array = np.concatenate(clean_seq_gen).astype(np.float32)
+        seq_array = np.concatenate(list(seq_gen)).astype(np.float32)
         return seq_array
 
     def label_generation(self, df, sequence_length):
         label_gen = [FemtoWindow.gen_labels(df[df['bearing_id'] == id], sequence_length, ['RUL'])
                      for id in df['bearing_id'].unique()]
         
-        clean_label_gen = [x for x in label_gen if len(x) > 0]
-        
-        if not clean_label_gen:
-            return np.empty((0, 1), dtype=np.float32)
+        # clean_label_gen = [x for x in label_gen if len(x) > 0]
+        # 
+        # if not clean_label_gen:
+        #     return np.empty((0, 1), dtype=np.float32)
 
-        label_array = np.concatenate(clean_label_gen).astype(np.float32)
+        label_array = np.concatenate(label_gen).astype(np.float32)
         return label_array
 
     def networkinput_generation(self, seq_array, stride, n_window, window_length):

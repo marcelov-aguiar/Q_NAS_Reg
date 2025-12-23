@@ -146,4 +146,5 @@ train:
         scaler_name: femto_scaler.save
         lstm_multiplier: 20
         validation_bearing_id: [12, 22, 32]
+        type_validation: split_train_val_bearing # split_train_val_bearing, split_train_val_temporal, split_train_val_shuffle
         save_predictions_to_txt: True

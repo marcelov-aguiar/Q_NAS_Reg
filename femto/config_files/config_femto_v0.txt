@@ -144,4 +144,7 @@ train:
         piecewise_lin_ref: 15000
         scaler_name: femto_scaler.save
         lstm_multiplier: 20
+        validation_bearing_id: [12, 22, 32]
+        type_validation: split_train_val_temporal # split_train_val_bearing, split_train_val_temporal, split_train_val_shuffle
+        val_ratio: 0.1
         save_predictions_to_txt: True
