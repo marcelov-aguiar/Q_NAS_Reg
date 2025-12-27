@@ -90,7 +90,7 @@ train:
     exp_path_base: exp_femto
     exp: exp_v5
     log_level: INFO
-    repeat: 3 # repetions for search
+    repeat: 2 # repetions for search
     dataloader_class: FemtoMultiHeadDataLoader
 
     data_augmentation: False

@@ -28,11 +28,11 @@ if __name__ == "__main__":
     # Sort by numeric version
     config_files = sorted(config_files, key=mlflow_tracking.extract_version)
     config_files = [
-	    # "config_femto_v0.txt",
-        # "config_femto_v1.txt"
-        "config_femto_v2.txt",
-        "config_femto_v3.txt",
-        "config_femto_v4.txt"
+	    "config_femto_v5.txt",
+		"config_femto_v6.txt",
+		"config_femto_v7.txt",
+		"config_femto_v8.txt",
+        "config_femto_v9.txt"
     ]
     for config_name in config_files:
         dataset = config_name.split("_")[1]

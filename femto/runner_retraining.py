@@ -15,11 +15,16 @@ if __name__ == "__main__":
 	# config_dir = os.path.join(base_path, "config_files")
 	# config_files = [f for f in os.listdir(config_dir) if f.endswith(".txt")]
 	config_files = [
-		"config_files/config_femto_v0.txt", # executar com LR na avolução
-		"config_files/config_femto_v1.txt",
-		"config_files/config_femto_v2.txt",
-		"config_files/config_femto_v3.txt",
-		"config_files/config_femto_v4.txt"
+		# "config_files/config_femto_v0.txt", # executar com LR na avolução
+		# "config_files/config_femto_v1.txt",
+		# "config_files/config_femto_v2.txt",
+		# "config_files/config_femto_v3.txt",
+		# "config_files/config_femto_v4.txt",
+		# "config_files/config_femto_v5.txt",
+		"config_files/config_femto_v9.txt",
+		"config_files/config_femto_v6.txt",
+		"config_files/config_femto_v7.txt",
+		"config_files/config_femto_v8.txt"
 	]
 	for cfg in config_files:
 		config_path = os.path.join(base_path, cfg)

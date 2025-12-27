@@ -6,7 +6,7 @@ import re
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from qnas_log import LogParamsEvolution
 from qnas_log import DataQNASPKL, QNASLog, QNASPalette, TrainingParams
 from qnas_visualizer import QNASVisualizer
@@ -582,3 +582,31 @@ def delete_run_physical_and_mlflow(experiment_name: str, parent_run_id: str, mlr
         shutil.rmtree(run_path)
     
     print("✅ Run principal e todos os nested runs apagados com sucesso (API + disco)!")
+
+def get_run_id_by_experiment_and_name(
+    experiment_name: str,
+    run_name: str
+) -> Optional[str]:
+    """
+    Retorna o run_id dado o nome do experimento e o nome do run.
+    Se houver mais de um run com o mesmo nome, retorna o mais recente.
+    """
+    client = MlflowClient()
+
+    experiment = client.get_experiment_by_name(experiment_name)
+    if experiment is None:
+        return None
+
+    experiment_id = experiment.experiment_id
+
+    runs = client.search_runs(
+        experiment_ids=[experiment_id],
+        filter_string=f"tags.mlflow.runName = '{run_name}'",
+        order_by=["attributes.start_time DESC"],
+        max_results=1
+    )
+
+    if not runs:
+        return None
+
+    return runs[0].info.run_id
