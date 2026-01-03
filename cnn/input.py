@@ -16,6 +16,7 @@ from torch.utils.data import DataLoader, Dataset
 from typing import Tuple, List
 from multi_head_utils import BaseDataLoader, CustomDatasetMultiHead
 from femto.preprocessing.femto_preprocessing import FemtoMultiHeadDataLoader
+from air_quality.preprocessing.air_quality_preprocessing import AirQualityMultiHeadDataLoader
 
 cifar10_info = {
   'dataset': 'CIFAR10',

@@ -1,20 +1,26 @@
 # Configuration file
-# semelhante ai v0, mas o kernel de tamanho 2 foi substituido pelo kernel de 3
-# gerações foi alterada 50, update_quantum_gen 3, update_quantum_rate 0.3
-# max_update 0.15, max_epochs 30
-# Semelhante ao v4, mas com preprocessing refatorado mais epocas, mais sensores e outras alteracoes
-# IGual ao v5 mas com piecewise_lin_ref: 9400
+# Esse arquivo é para testar a evolucao apos a refatoracao do codigo do input e do config.txt
+# ele ja tem as probabilidades iguais e blocos de convolucao semelhante ao trabalho relacionado
+# teoricamente espero bons resultados
+# coloquei allow_duplicate_architectures como True pois ainda nao implementei deteccao de
+# net e parametros em conjunto que sao duplicados
 
+# Esse config e para executar com a correcao do calculo da metrica RMSE que estava por batch
+# Agora o calculo da metrica esta por amostra e não batch
+# Esse config é semelhante ao v5 do turbofan, mas foi adaptado para o air_quality
+# Semelhante ao v0 mas com CNN diferente em cada Head e 100 geracoes
+# Semelhante ao v1 mais com update_quantum_gen 2, update_quantum_rate 0.3 e
+# max_update 0.15
 
 QNAS:
     crossover_rate: 0.5
-    max_generations: 50
+    max_generations: 100
     max_num_nodes: 6
     num_quantum_ind: 4
     penalize_number: 3
     repetition: 5
     replace_method: best
-    update_quantum_gen: 3
+    update_quantum_gen: 2
     update_quantum_rate: 0.3
     save_data_freq: 10
     crossover_frequency: 5
@@ -42,28 +48,28 @@ QNAS:
 
     function_dict:  {
         'conv_1_1_4':  {'function': 'Conv1DBlock', 'params': {'kernel': 1, 'strides': 1, 'filters': 4}, 'prob': 1.0/16.0},
-        'conv_3_1_4':  {'function': 'Conv1DBlock', 'params': {'kernel': 3, 'strides': 1, 'filters': 4}, 'prob': 1.0/16.0},
+        'conv_2_1_4':  {'function': 'Conv1DBlock', 'params': {'kernel': 2, 'strides': 1, 'filters': 4}, 'prob': 1.0/16.0},
         'conv_1_1_3':  {'function': 'Conv1DBlock', 'params': {'kernel': 1, 'strides': 1, 'filters': 3}, 'prob': 1.0/16.0},
-        'conv_3_1_3':  {'function': 'Conv1DBlock', 'params': {'kernel': 3, 'strides': 1, 'filters': 3}, 'prob': 1.0/16.0},
+        'conv_2_1_3':  {'function': 'Conv1DBlock', 'params': {'kernel': 2, 'strides': 1, 'filters': 3}, 'prob': 1.0/16.0},
         'conv_1_1_9':  {'function': 'Conv1DBlock', 'params': {'kernel': 1, 'strides': 1, 'filters': 9}, 'prob': 1.0/16.0},
         'conv_1_1_6':  {'function': 'Conv1DBlock', 'params': {'kernel': 1, 'strides': 1, 'filters': 6}, 'prob': 1.0/16.0},
         'conv_1_1_7':  {'function': 'Conv1DBlock', 'params': {'kernel': 1, 'strides': 1, 'filters': 7}, 'prob': 1.0/16.0},
         'conv_1_1_16':  {'function': 'Conv1DBlock', 'params': {'kernel': 1, 'strides': 1, 'filters': 16}, 'prob': 1.0/16.0},
-        'conv_3_1_5':  {'function': 'Conv1DBlock', 'params': {'kernel': 3, 'strides': 1, 'filters': 5}, 'prob': 1.0/16.0},
-        'conv_3_1_8':  {'function': 'Conv1DBlock', 'params': {'kernel': 3, 'strides': 1, 'filters': 8}, 'prob': 1.0/16.0},
-        'conv_3_1_9': {'function': 'Conv1DBlock', 'params': {'kernel': 3, 'strides': 1, 'filters': 9}, 'prob': 1.0/16.0},
-        'conv_3_1_16': {'function': 'Conv1DBlock', 'params': {'kernel': 3, 'strides': 1, 'filters': 16}, 'prob': 1.0/16.0},
-        'conv_3_1_10':  {'function': 'Conv1DBlock', 'params': {'kernel': 3, 'strides': 1, 'filters': 10}, 'prob': 1.0/16.0},
+        'conv_2_1_5':  {'function': 'Conv1DBlock', 'params': {'kernel': 2, 'strides': 1, 'filters': 5}, 'prob': 1.0/16.0},
+        'conv_2_1_8':  {'function': 'Conv1DBlock', 'params': {'kernel': 2, 'strides': 1, 'filters': 8}, 'prob': 1.0/16.0},
+        'conv_2_1_9': {'function': 'Conv1DBlock', 'params': {'kernel': 2, 'strides': 1, 'filters': 9}, 'prob': 1.0/16.0},
+        'conv_2_1_16': {'function': 'Conv1DBlock', 'params': {'kernel': 2, 'strides': 1, 'filters': 16}, 'prob': 1.0/16.0},
+        'conv_2_1_10':  {'function': 'Conv1DBlock', 'params': {'kernel': 2, 'strides': 1, 'filters': 10}, 'prob': 1.0/16.0},
         'conv_1_1_5':  {'function': 'Conv1DBlock', 'params': {'kernel': 1, 'strides': 1, 'filters': 5}, 'prob': 1.0/16.0},
-        'conv_3_1_2':  {'function': 'Conv1DBlock', 'params': {'kernel': 3, 'strides': 1, 'filters': 2}, 'prob': 1.0/16.0},
+        'conv_2_1_2':  {'function': 'Conv1DBlock', 'params': {'kernel': 2, 'strides': 1, 'filters': 2}, 'prob': 1.0/16.0},
         'no_op':        {'function': 'NoOp', 'params': {}, 'prob': 1.0/16.0}
     }
 
 train:
-    batch_size: 400
-    eval_batch_size: 400
-    max_epochs: 50
-    epochs_to_eval: 49
+    batch_size: 64
+    eval_batch_size: 64
+    max_epochs: 20
+    epochs_to_eval: 19
     optimizer:
         name: RMSprop #RMSprop, Adam, AdamW, SGD
         params:
@@ -86,32 +92,32 @@ train:
     allow_duplicate_architectures: False
 
     # Dataset
-    dataset: femto_multihead_train_v1
-    file_extension: parquet
-    exp_path_base: exp_femto
-    exp: exp_v9
+    dataset: air_quality_train
+    file_extension: csv
+    exp_path_base: exp_air_quality
+    exp: exp_v3
     log_level: INFO
     repeat: 3 # repetions for search
-    dataloader_class: FemtoMultiHeadDataLoader
+    dataloader_class: AirQualityMultiHeadDataLoader
 
     data_augmentation: False
     subtract_mean: True
     limit_data: True
     limit_data_value: 10000
     num_workers: 0
-    num_classes: 1
+    num_classes: 24
     task: regression
     dataset_type: multihead
     target_normalization:
         name: sklearn.preprocessing.MinMaxScaler
-        path: femto_target_scaler_v1.save
-        params: 
-        replace: True
+        path: scaler_y_air_quality.save
+        params:
+        replace: False
 
     # Tensorflow
     save_checkpoints_epochs: 5
     save_summary_epochs: 0.25
-    threads: 16
+    threads: 20
 
     # penalization parameters - scalarized fitness
     max_params: 114090 # 1.9M
@@ -122,27 +128,23 @@ train:
     network_gap: False
 
     # Params for retrain:
-    batch_size_retrain: 400
-    eval_batch_size_retrain: 400
-    max_epochs_retrain: 50
+    batch_size_retrain: 64
+    eval_batch_size_retrain: 64
+    max_epochs_retrain: 30
     num_repetitions_retrain: 5 # repetions for retrain
 
     # problem-specific parameters
     extra_params:
-        shared_head_architecture: True
-        num_sensors: 56
-        dataset_test: femto_multihead_test_v1
-        file_extension_test: parquet
-        cols_non_sensor: ['bearing_id', 'RUL']
-        cols_to_drop: ['file_name', 'sample_idx', 'rul_seconds', 'rul_files', 'elapsed_time', 'delta_seconds', 'dataset_type']
-        sequence_length: 16
+        shared_head_architecture: False
+        num_sensors: 5
+        dataset_test: air_quality_test
+        dataset_val: air_quality_val
+        file_extension_test: csv
+        file_extension_val: csv
+        cols_non_sensor: ['unit_nr', 'Date']
+        sequence_length: 24
         stride: 1
         in_channels: 1
-        val_split: 0.1
-        piecewise_lin_ref: 9400
-        scaler_name: femto_scaler_v1.save
-        lstm_multiplier: 20
-        validation_bearing_id: [12, 22, 32]
-        type_validation: split_train_val_bearing # split_train_val_bearing, split_train_val_temporal, split_train_val_shuffle
-        val_ratio: 0.2
-        save_predictions_to_txt: True
+        lstm_multiplier: 1
+        campaign_name: unit_nr
+        target_name: CO(GT)

@@ -1,12 +1,12 @@
-dataset: femto_multihead_train_v1
+dataset: femto_multihead_train
 num_classes: 1
-num_sensors: 56
-seed: 1766763978
+num_sensors: 12
+seed: 1766933990
 shape:
 - null
 - null
 - null
 task: regression
 test_records: 11
-train_records: 5955
-valid_records: 1489
+train_records: 4184
+valid_records: 3260

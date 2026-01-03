@@ -1,9 +1,9 @@
-""" Copyright (c) 2024, Diego Páez
-    * Licensed under The MIT License [see LICENSE for details]
-
-    - Código usado para verificar se o resultados da arquitetura
-    feita no PyTorch está igual a arquitetura feita no TensorFlow (trabalho relacionado).
-    No momento (24-08-2025) o resultado está igual
+"""
+Sobre este experimento:
+Esse experimento é para executar um arquivo config passado pelo argumento --config via terminal
+A ideia é ter um código externo que chame esse código do retreinamento da arquitetura
+encontrada na evolućão via terminal
+O run_retraining é semelhante ao run_retrain_turbofan_FD002_v0.py!!!!
 """
 
 import argparse
@@ -13,7 +13,6 @@ from util import check_files, init_log, save_results_file, load_yaml
 from cnn import input
 from cnn import train_detailed as train
 import time
-import sys
 
 DEBUG = True
 
@@ -40,12 +39,12 @@ def main(**args):
     test_loader = data_loader.get_loader(individual=config.evolved_params['net'],
                                          for_train=False, pin_memory_device=args['device'])
     
-    # update experiment path name to retrain_"config_code"_1
-    config.train_spec['experiment_path'] = os.path.join(experiment_path, f"retrain_{config_code}_{1}")
-    
     output_dict = {}
     # Retrain model for the number of repetitions
     for i in range(1, args['num_repetitions']+1):
+
+        config.train_spec['experiment_path'] = os.path.join(experiment_path, f"retrain_{config_code}_{i}")
+
         logger.info(f"Retraining {experiment_path} repetition {i} ...")
         start_time = time.perf_counter()
         results_dict = train.train_and_eval(params=config.train_spec,
@@ -78,33 +77,47 @@ def main(**args):
 
 if __name__ == '__main__':
 
-    CONFIG_NAME = "config_femto_v100.txt"
+	# How to run: python run_retraining.py --config FD001/config_files/config_turbofan_FD001_v18.txt --repeat 3
+	import argparse
 
-    base_path = os.path.dirname(os.path.abspath(__file__))
-    config_path = os.path.join(base_path, 'config_files', CONFIG_NAME)
-    config_file = load_yaml(config_path)
+	parser = argparse.ArgumentParser()
+	parser.add_argument("--config", type=str, required=True, help="Config file name (inside config_files/)")
+	
+	parser.add_argument(
+		"--repeat",
+		type=int,
+		default=1,
+		help="Number of repetitions (default: 1)"
+    )
+    
+	args = parser.parse_args()
 
-    dataset = config_file['train']['dataset']
-    exp_path_base = config_file['train']['exp_path_base']
-    exp = config_file['train']['exp']
-    file_extension = config_file['train']['file_extension']
+	# ["FD002", "config_files", "config_turbofan_FD001_v100.txt"]
+	config_file_folder, config_file_name = args.config.split("/")
 
-    dataset_path = os.path.join(base_path,
-                             'data')
+	base_path = os.path.join(os.path.dirname(os.path.abspath(__file__)))
 
-    repeat = config_file['train']['repeat']
+	config_path = os.path.join(base_path, config_file_folder, config_file_name)
+	config_file = load_yaml(config_path)
 
-    exp_path = os.path.join(base_path,
-                            exp_path_base,
-                            f"{exp}_repeat_{repeat}")
+	dataset = config_file['train']['dataset']
+	exp_path_base = config_file['train']['exp_path_base']
+	exp = config_file['train']['exp']
+	file_extension = config_file['train']['file_extension']
+	dataset_path = os.path.join(base_path, 'data')
+	repeat = int(args.repeat)  # config_file['train']['repeat']
 
-    arguments = {
+	exp_path = os.path.join(base_path,
+	                        exp_path_base,
+	                        f"{exp}_repeat_{repeat}")
+
+	arguments = {
         "retrain_folder": "retrain",
         "config_code": "F12",
         "max_epochs": config_file['train']['max_epochs_retrain'], #30,
         "batch_size": config_file['train']['batch_size_retrain'], #400,
         "eval_batch_size": config_file['train']['eval_batch_size_retrain'], #32,
-        "lr_scheduler": config_file['train']['lr_scheduler'],
+        "lr_scheduler": config_file['train']['lr_scheduler'], #LambdaLR",
         "num_workers": config_file['train']['num_workers'], #4,
         "limit_data": False,
         "experiment_path": exp_path,
@@ -127,4 +140,4 @@ if __name__ == '__main__':
         "num_repetitions": config_file['train']['num_repetitions_retrain'], #1
     }
 
-    main(**arguments)
+	main(**arguments)

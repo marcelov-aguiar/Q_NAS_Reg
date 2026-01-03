@@ -110,6 +110,7 @@ train:
         name: sklearn.preprocessing.MinMaxScaler
         path: femto_target_scaler.save
         params: 
+        replace: True
 
     # Tensorflow
     save_checkpoints_epochs: 5

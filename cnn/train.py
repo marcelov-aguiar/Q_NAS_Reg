@@ -571,7 +571,11 @@ def fitness_calculation(id_num:str,
 
     target_scaler = None
     if ('target_normalization' in params) and (params['target_normalization']["name"] is not None):
-        target_scaler_name = params['target_normalization']['path'].replace('.save', '_'+params['exp']+'.save')
+        if 'replace' in params['target_normalization'] and params['target_normalization']["replace"]:
+            target_scaler_name = params['target_normalization']['path'].replace('.save', '_'+params['exp']+'.save')
+        else:
+            target_scaler_name = params['target_normalization']['path']
+
         target_scaler_path = os.path.join(params['data_path'], 'scaler', target_scaler_name)
         if os.path.exists(target_scaler_path):
             target_scaler = joblib.load(target_scaler_path)
