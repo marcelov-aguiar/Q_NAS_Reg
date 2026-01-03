@@ -94,7 +94,7 @@ train:
     exp_path_base: exp_FD004
     exp: exp_v13
     log_level: INFO
-    repeat: 1
+    repeat: 3
     dataloader_class: TurbofanMultiHeadDataLoader
 
     data_augmentation: False
